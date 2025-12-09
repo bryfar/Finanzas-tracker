@@ -1,6 +1,7 @@
 export enum TransactionType {
   INCOME = 'INCOME',
-  EXPENSE = 'EXPENSE'
+  EXPENSE = 'EXPENSE',
+  TRANSFER = 'TRANSFER'
 }
 
 export enum Category {
@@ -14,9 +15,41 @@ export enum Category {
   SERVICES = 'Servicios',
   DEBT = 'Deudas',
   OTHER = 'Otros',
-  // Categorías internas para ingresos (aunque no se muestren en UI)
   FIXED_INCOME = 'Ingreso Fijo',
-  VARIABLE_INCOME = 'Ingreso Variable'
+  VARIABLE_INCOME = 'Ingreso Variable',
+  TRANSFER_OUT = 'Transferencia Enviada',
+  TRANSFER_IN = 'Transferencia Recibida'
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  type: 'CASH' | 'BANK' | 'CREDIT' | 'INVESTMENT';
+  balance: number;
+  color: string;
+  icon?: string;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline?: string;
+  color: string;
+  icon: string;
+  mediaUrl?: string; // New: Image for Stories
+  allowQuickSave?: boolean; // New: Toggle for appearing in feed
+}
+
+export interface Subscription {
+  id: string;
+  name: string;
+  amount: number;
+  billingCycle: 'MONTHLY' | 'YEARLY';
+  nextPaymentDate: string;
+  category: Category;
+  logoUrl?: string;
 }
 
 export interface Transaction {
@@ -26,7 +59,8 @@ export interface Transaction {
   type: TransactionType;
   category: Category;
   description: string;
-  isFixed: boolean; // Nuevo: Determina si es Fijo o Variable
+  isFixed: boolean;
+  accountId?: string;
 }
 
 export interface FinancialSummary {
@@ -36,21 +70,46 @@ export interface FinancialSummary {
   savingsRate: number;
   fixedExpenses: number;
   variableExpenses: number;
+  projectedBalance: number;
 }
 
-// Estructuras para la IA
-export interface AIAdvice {
+// AI & New Features
+export interface Asset {
+  id: string;
+  name: string;
+  value: number;
+  type: 'ASSET' | 'LIABILITY'; 
+  category: 'REAL_ESTATE' | 'VEHICLE' | 'INVESTMENT' | 'DEBT' | 'OTHER';
+}
+
+export type AIPersonality = 'STRICT' | 'MOTIVATOR' | 'SARCASTIC';
+export type RiskProfile = 'CONSERVATIVE' | 'MODERATE' | 'RISKY';
+
+export interface AIConfig {
+  personality: AIPersonality;
+  riskProfile: RiskProfile;
+}
+
+export interface UserMetadata {
+  full_name?: string;
+  bio?: string;
+  avatar_seed?: string;
+  quick_save_amount?: number; // New: Default double tap amount
+}
+
+export interface EducationTip {
+  id: string;
   title: string;
-  description: string;
-  impact: 'ALTO' | 'MEDIO' | 'BAJO';
-  actionable: boolean;
+  content: string;
+  category: string;
+  readTime: string; 
 }
 
-export interface AIFinancialAnalysis {
-  healthScore: number; // 0 a 100
-  summary: string;
-  forecast: string;
-  tips: AIAdvice[];
+export interface AIInsight {
+  id: string;
+  type: 'ANOMALY' | 'TIP' | 'WARNING';
+  message: string;
+  date: string;
 }
 
 export interface ChatMessage {
@@ -58,4 +117,17 @@ export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   timestamp: Date;
+}
+
+// Finny Snaps (TikTok Mode)
+export interface Snap {
+  id: string;
+  type: 'GOAL_PROMO' | 'TIP' | 'QUIZ' | 'STREAK_SUMMARY';
+  content: {
+    title: string;
+    subtitle: string;
+    mediaUrl?: string; // Background Image/Video
+    goalId?: string; // If it's a quick save snap
+    actionLabel?: string;
+  };
 }

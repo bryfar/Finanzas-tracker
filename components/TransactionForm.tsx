@@ -1,213 +1,211 @@
-import React, { useState } from 'react';
-import { Plus, Minus, Calendar, Tag, FileText, Check } from 'lucide-react';
-import { Transaction, TransactionType, Category } from '../types';
+import React, { useState, useEffect } from 'react';
+import { X, Check, Camera, AlertTriangle } from 'lucide-react';
+import { Transaction, TransactionType, Category, Account } from '../types';
+import { transactionService } from '../services/transactionService';
 
 interface TransactionFormProps {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  userId: string;
+  onClose: () => void;
+  isOpen: boolean;
 }
 
-const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction }) => {
+const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, userId, onClose, isOpen }) => {
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<TransactionType>(TransactionType.EXPENSE);
   const [category, setCategory] = useState<Category>(Category.FOOD);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isFixed, setIsFixed] = useState<boolean>(true); // true = Fijo, false = Variable
+  const [isFixed, setIsFixed] = useState<boolean>(true);
+  const [accountId, setAccountId] = useState<string>('');
+  
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => {
+      if (isOpen) {
+          const loadAccs = async () => {
+              const accs = await transactionService.getAccounts(userId);
+              setAccounts(accs);
+              if (accs.length > 0 && !accountId) setAccountId(accs[0].id);
+          };
+          loadAccs();
+      }
+  }, [userId, isOpen]);
+
+  // Real-time Duplicate Check
+  useEffect(() => {
+      if (amount && description) {
+          const check = async () => {
+              const dup = await transactionService.checkPossibleDuplicate(userId, parseFloat(amount), description);
+              setIsDuplicate(dup);
+          };
+          const timeout = setTimeout(check, 500);
+          return () => clearTimeout(timeout);
+      }
+  }, [amount, description, userId]);
+
+  const handleOCR = () => {
+      setScanning(true);
+      // Simulate OCR Delay & Processing
+      setTimeout(() => {
+          setAmount('45.50');
+          setDescription('Supermercado Metro');
+          setCategory(Category.FOOD);
+          setIsFixed(false);
+          setScanning(false);
+      }, 1500);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount) return;
 
     setIsSubmitting(true);
-
-    // Lógica para descripción y categoría automática en Ingresos
-    let finalDescription = description;
-    let finalCategory = category;
+    let finalDesc = description;
+    let finalCat = category;
 
     if (type === TransactionType.INCOME) {
-      finalDescription = isFixed ? 'Ingreso Recurrente / Sueldo' : 'Ingreso Extra / Variable';
-      finalCategory = isFixed ? Category.FIXED_INCOME : Category.VARIABLE_INCOME;
+      finalDesc = description || (isFixed ? 'Ingreso Recurrente' : 'Ingreso Extra');
+      finalCat = isFixed ? Category.FIXED_INCOME : Category.VARIABLE_INCOME;
     } else {
-        if (!description) {
-            setIsSubmitting(false);
-            return;
-        }
+       finalDesc = description || category;
     }
+
+    // Play Coin Sound (Simulated)
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
 
     onAddTransaction({
       amount: parseFloat(amount),
-      description: finalDescription,
+      description: finalDesc,
       type,
-      category: finalCategory,
+      category: finalCat,
       date,
       isFixed,
+      accountId
     });
 
-    // Reset con animación
     setTimeout(() => {
         setAmount('');
         setDescription('');
         setIsSubmitting(false);
-    }, 200);
+        setIsDuplicate(false);
+        onClose();
+    }, 300);
   };
 
-  const expenseCategories = Object.values(Category).filter(
-    c => c !== Category.FIXED_INCOME && c !== Category.VARIABLE_INCOME
+  const categories = Object.values(Category).filter(c => 
+     c !== Category.FIXED_INCOME && c !== Category.VARIABLE_INCOME && c !== Category.TRANSFER_IN && c !== Category.TRANSFER_OUT
   );
 
+  if (!isOpen) return null;
+
   return (
-    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-full flex flex-col">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold text-slate-800 tracking-tight">Nuevo Movimiento</h3>
-        <p className="text-sm text-slate-400">Registra tus gastos o ingresos</p>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-5 flex-1 flex flex-col">
-        
-        {/* Toggle Type - Segmented Control */}
-        <div className="bg-slate-100 p-1.5 rounded-2xl flex relative">
-           {/* Slider Animation Background could go here */}
-          <button
-            type="button"
-            onClick={() => { setType(TransactionType.INCOME); setIsFixed(true); }}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              type === TransactionType.INCOME
-                ? 'bg-white text-emerald-600 shadow-sm ring-1 ring-black/5'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Plus size={16} strokeWidth={3} /> Ingreso
-          </button>
-          <button
-            type="button"
-            onClick={() => setType(TransactionType.EXPENSE)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              type === TransactionType.EXPENSE
-                ? 'bg-white text-rose-500 shadow-sm ring-1 ring-black/5'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Minus size={16} strokeWidth={3} /> Gasto
-          </button>
-        </div>
-
-        {/* Amount Input - Hero Element */}
-        <div className="relative group">
-          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 pl-1">Monto (Soles)</label>
-          <div className="relative">
-            <span className={`absolute left-4 top-1/2 -translate-y-1/2 font-bold text-xl ${type === TransactionType.INCOME ? 'text-emerald-500' : 'text-rose-500'}`}>S/.</span>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-2xl font-bold text-slate-800 placeholder-slate-300"
-              placeholder="0.00"
-            />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+       <style>{`input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }`}</style>
+       
+       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
+       
+       <div className="bg-white w-full max-w-md sm:rounded-[2.5rem] rounded-t-[2.5rem] shadow-2xl animate-slide-up flex flex-col max-h-[95vh] z-10 relative overflow-hidden">
+          
+          <div className="flex justify-between items-center p-6 pb-2">
+             <button onClick={onClose} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"><X size={20} strokeWidth={3} /></button>
+             <div className="flex gap-2 bg-slate-100 p-1 rounded-full">
+                <button onClick={() => setType(TransactionType.EXPENSE)} className={`px-6 py-2 rounded-full text-xs font-heading font-extrabold flex items-center gap-2 transition-all ${type === TransactionType.EXPENSE ? 'bg-danger text-white shadow-lg shadow-danger/30' : 'text-slate-400'}`}>Gasto</button>
+                <button onClick={() => setType(TransactionType.INCOME)} className={`px-6 py-2 rounded-full text-xs font-heading font-extrabold flex items-center gap-2 transition-all ${type === TransactionType.INCOME ? 'bg-action text-white shadow-lg shadow-action/30' : 'text-slate-400'}`}>Ingreso</button>
+             </div>
+             <button onClick={handleOCR} className={`p-3 rounded-full text-indigo-500 hover:bg-indigo-50 transition-colors ${scanning ? 'animate-pulse bg-indigo-100' : 'bg-slate-50'}`} title="Escanear Recibo">
+                 <Camera size={20} strokeWidth={3} />
+             </button>
           </div>
-        </div>
 
-        {/* Toggle Fixed / Variable - Cards */}
-        <div className="grid grid-cols-2 gap-3">
-            <button
-                type="button"
-                onClick={() => setIsFixed(true)}
-                className={`py-3 px-2 rounded-2xl text-xs font-semibold transition-all border ${
-                    isFixed 
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-            >
-                {type === TransactionType.INCOME ? '💰 Fijo / Sueldo' : '🏢 Gasto Fijo'}
-            </button>
-            <button
-                type="button"
-                onClick={() => setIsFixed(false)}
-                className={`py-3 px-2 rounded-2xl text-xs font-semibold transition-all border ${
-                    !isFixed 
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-            >
-                {type === TransactionType.INCOME ? '💸 Extra / Variable' : '☕ Gasto Variable'}
-            </button>
-        </div>
-
-        {/* Additional Fields Wrapper */}
-        <div className="space-y-4">
-             {/* Date */}
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                <Calendar size={18} />
+          <form id="tx-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+              
+              <div className="px-8 py-6 text-center">
+                  <div className="flex items-center justify-center gap-1 scale-110">
+                      <span className={`text-3xl font-heading font-black ${type === TransactionType.EXPENSE ? 'text-danger' : 'text-action'}`}>S/.</span>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={amount} 
+                        onChange={e => setAmount(e.target.value)}
+                        placeholder="0"
+                        className={`text-6xl font-heading font-black bg-transparent w-full max-w-[200px] text-center outline-none placeholder-slate-200 ${type === TransactionType.EXPENSE ? 'text-danger' : 'text-action'}`}
+                        autoFocus
+                      />
+                  </div>
+                  {scanning && <p className="text-xs text-indigo-500 font-bold mt-2 animate-pulse">Analizando recibo con IA...</p>}
+                  {isDuplicate && (
+                      <div className="mt-2 bg-yellow-50 text-yellow-600 px-4 py-2 rounded-xl inline-flex items-center gap-2 text-xs font-bold animate-shake">
+                          <AlertTriangle size={14} />
+                          Parece que ya anotaste esto
+                      </div>
+                  )}
               </div>
-              <input
-                type="date"
-                required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-medium text-slate-600 cursor-pointer hover:bg-slate-50 transition-colors"
-              />
-            </div>
 
-            {/* Expense Specifics with Animation */}
-            {type === TransactionType.EXPENSE && (
-                <div className="space-y-4 animate-slide-up">
-                    <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                            <Tag size={18} />
-                        </div>
-                        <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value as Category)}
-                        className="w-full pl-11 pr-8 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-medium text-slate-600 appearance-none cursor-pointer hover:bg-slate-50"
-                        >
-                        {expenseCategories.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
+              <div className="bg-slate-50 flex-1 rounded-t-[2.5rem] p-6 space-y-6">
+                  
+                  <div className="flex gap-4">
+                      <div className="flex-1">
+                          <label className="ml-2 mb-1 block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cuenta</label>
+                          <select value={accountId} onChange={e => setAccountId(e.target.value)} className="input-base text-sm py-3 bg-white">
+                              {accounts.length === 0 && <option value="">Efectivo</option>}
+                              {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                          </select>
+                      </div>
+                      <div className="w-1/3">
+                          <label className="ml-2 mb-1 block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha</label>
+                          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="input-base text-sm py-3 bg-white" />
+                      </div>
+                  </div>
 
-                    <div className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                            <FileText size={18} />
-                        </div>
-                        <input
-                        type="text"
-                        required
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-medium text-slate-600 placeholder-slate-300 transition-colors"
-                        placeholder="Descripción (ej: Almuerzo)"
-                        />
-                    </div>
-                </div>
-            )}
-        </div>
+                  <div>
+                      <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Nota (Opcional)" className="input-base bg-white" />
+                  </div>
 
-        <div className="flex-1"></div>
+                  {type === TransactionType.EXPENSE && (
+                      <div className="animate-fade-in">
+                          <label className="ml-2 mb-2 block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Categoría</label>
+                          <div className="flex flex-wrap gap-2">
+                              {categories.map(cat => (
+                                  <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => setCategory(cat)}
+                                    className={`px-4 py-2 rounded-2xl text-xs font-bold font-heading transition-all border-2 ${category === cat ? 'bg-slate-800 text-white border-slate-800 shadow-md transform scale-105' : 'bg-white text-slate-500 border-transparent hover:border-slate-200'}`}
+                                  >
+                                      {cat}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+                  )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`w-full py-4 text-white rounded-2xl transition-all font-bold text-base shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 ${
-            type === TransactionType.INCOME 
-                ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' 
-                : 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/20'
-          }`}
-        >
-          {isSubmitting ? <span className="animate-pulse">Guardando...</span> : (
-            <>
-               <Check size={20} strokeWidth={3} />
-               {type === TransactionType.INCOME ? 'Registrar Ingreso' : 'Registrar Gasto'}
-            </>
-          )}
-        </button>
-      </form>
+                  <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-100">
+                      <span className="text-xs font-bold text-slate-500 ml-2">¿Es {type === TransactionType.EXPENSE ? 'gasto' : 'ingreso'} fijo?</span>
+                      <div className="flex bg-slate-100 rounded-xl p-1">
+                          <button type="button" onClick={() => setIsFixed(true)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${isFixed ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400'}`}>SI</button>
+                          <button type="button" onClick={() => setIsFixed(false)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all ${!isFixed ? 'bg-brand-500 text-white shadow-md' : 'text-slate-400'}`}>NO</button>
+                      </div>
+                  </div>
+              </div>
+          </form>
+
+          <div className="p-6 bg-slate-50 safe-area-pb">
+              <button 
+                type="submit"
+                form="tx-form"
+                disabled={isSubmitting}
+                className={`w-full py-4 rounded-3xl font-heading font-black text-white text-lg shadow-xl shadow-action/20 active:scale-95 transition-all flex items-center justify-center gap-3 ${type === TransactionType.EXPENSE ? 'bg-slate-900' : 'bg-action'}`}
+              >
+                  {isSubmitting ? 'Guardando...' : <><Check size={24} strokeWidth={3} /> Confirmar</>}
+              </button>
+          </div>
+       </div>
     </div>
   );
 };
