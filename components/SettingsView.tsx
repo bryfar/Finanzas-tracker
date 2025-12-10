@@ -188,11 +188,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ userEmail, userName, streak
           </div>
       </div>
 
-      <div className="space-y-8 max-w-2xl mx-auto w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto w-full">
           {/* Preferences */}
           <section>
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-4">Sistema</h4>
-              <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+              <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm h-full">
                   <SettingItem 
                     icon={<Bell size={20} />} 
                     color="bg-rose-100 text-rose-500" 
@@ -218,7 +218,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ userEmail, userName, streak
           {/* AI Config */}
           <section>
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-4">Configuración Finny IA</h4>
-              <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm p-6 space-y-4">
+              <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm p-6 space-y-4 h-full">
                   <div>
                       <div className="flex items-center gap-3 mb-2">
                           <Bot className="text-brand-500" size={20} />
@@ -249,7 +249,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ userEmail, userName, streak
           </section>
 
           {/* Session */}
-          <section>
+          <section className="lg:col-span-2">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-4">Sesión</h4>
               <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
                    <button onClick={onLogout} className="w-full flex items-center justify-between p-5 hover:bg-rose-50 transition-colors group">

@@ -175,12 +175,12 @@ const AccountsWidget: React.FC<AccountsWidgetProps> = ({ accounts, onAddAccount,
         </div>
       )}
 
-      {/* Cards Carousel */}
-      <div className="w-full overflow-hidden -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex overflow-x-auto gap-4 pb-8 pt-2 snap-x snap-mandatory custom-scrollbar pr-4">
+      {/* Responsive Layout: Carousel on Mobile, Grid on Desktop */}
+      <div className="w-full -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex md:grid md:grid-cols-2 xl:grid-cols-3 overflow-x-auto md:overflow-visible gap-4 md:gap-6 pb-8 md:pb-0 pt-2 snap-x snap-mandatory md:snap-none custom-scrollbar pr-4 md:pr-0">
             
             {accounts.length === 0 && (
-                <div className="w-full sm:w-[340px] h-[210px] flex-shrink-0 snap-center p-8 text-center border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 flex flex-col items-center justify-center gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => setShowAdd(true)}>
+                <div className="w-[85vw] sm:w-[360px] md:w-full h-[210px] flex-shrink-0 snap-center p-8 text-center border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 flex flex-col items-center justify-center gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => setShowAdd(true)}>
                     <div className="opacity-50 group-hover:opacity-100 transition-opacity transform group-hover:scale-110 duration-300">
                         <Mascot variant="happy" size={60} />
                     </div>
@@ -192,7 +192,7 @@ const AccountsWidget: React.FC<AccountsWidgetProps> = ({ accounts, onAddAccount,
             )}
 
             {accounts.map(acc => (
-            <div key={acc.id} className="flex-shrink-0 snap-center w-[85vw] sm:w-[360px] h-[210px] rounded-[2.5rem] relative overflow-hidden shadow-xl transition-all hover:-translate-y-2 duration-300 group select-none cursor-pointer">
+            <div key={acc.id} className="flex-shrink-0 snap-center w-[85vw] sm:w-[360px] md:w-full h-[210px] rounded-[2.5rem] relative overflow-hidden shadow-xl transition-all hover:-translate-y-2 duration-300 group select-none cursor-pointer">
                 
                 {/* Dynamic Backgrounds based on Type */}
                 <div className={`absolute inset-0 ${

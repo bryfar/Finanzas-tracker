@@ -81,7 +81,7 @@ const FinancialChart: React.FC<FinancialChartProps> = ({ transactions }) => {
   return (
     <div className="space-y-6 h-full flex flex-col">
       {/* Trend Chart */}
-      <div className="card-base p-6 md:p-8 flex-1 min-h-[300px] md:min-h-[400px] flex flex-col relative overflow-hidden">
+      <div className="card-base p-6 md:p-8 flex-1 min-h-[300px] md:min-h-[450px] flex flex-col relative overflow-hidden">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 relative z-10">
             <div>
               <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">

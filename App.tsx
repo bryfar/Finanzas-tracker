@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -169,12 +169,23 @@ function App() {
   const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   const avatarSeed = session.user.user_metadata?.avatar_seed || session.user.email;
 
+  const getPageTitle = () => {
+      switch(activeView) {
+          case 'analysis': return 'Análisis Financiero';
+          case 'assets': return 'Mi Patrimonio';
+          case 'goals': return 'Metas & Ahorros';
+          case 'education': return 'Educación';
+          case 'settings': return 'Configuración';
+          default: return 'Panel Principal';
+      }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-surface font-sans text-slate-800 flex overflow-hidden">
         <NotificationToast notifications={notifications} removeNotification={(id) => setNotifications(p => p.filter(n => n.id !== id))} />
         <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={handleAddTransaction} />
         
-        {/* [NUEVO 🔥] Finny Snaps Modal */}
+        {/* Finny Snaps Modal */}
         {showSnaps && (
             <FinnySnaps 
                 snaps={dailySnaps} 
@@ -237,9 +248,42 @@ function App() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 h-[100dvh] overflow-y-auto custom-scrollbar relative scroll-smooth">
+        <main className="flex-1 h-[100dvh] overflow-y-auto custom-scrollbar relative scroll-smooth bg-surface">
              <div className="p-4 lg:p-10 max-w-[1600px] mx-auto pb-48 lg:pb-12">
                  
+                 {/* Desktop Header */}
+                 <div className="hidden lg:flex justify-between items-center mb-10 sticky top-0 z-30 py-4 bg-surface/90 backdrop-blur-md">
+                    <div>
+                        <h1 className="text-3xl font-heading font-black text-slate-900">{getPageTitle()}</h1>
+                        <p className="text-slate-500 font-medium">Bienvenido de nuevo, {displayName.split(' ')[0]}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                        {/* Search Bar Simulation */}
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={20} />
+                            <input type="text" placeholder="Buscar..." className="bg-white pl-12 pr-4 py-3 rounded-2xl shadow-sm border border-slate-100 focus:ring-4 focus:ring-brand-500/10 outline-none w-64 transition-all focus:w-80 font-medium text-sm text-slate-700" />
+                        </div>
+
+                        {/* Notification Bell */}
+                        <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:shadow-md transition-all cursor-pointer relative">
+                             <Bell size={20} />
+                             {notifications.length > 0 && <span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full"></span>}
+                        </div>
+
+                        {/* Profile Pill */}
+                        <div className="flex items-center gap-3 bg-white p-2 pr-6 rounded-[1.2rem] border border-slate-100 shadow-sm cursor-pointer hover:shadow-md transition-all" onClick={() => setActiveView('settings')}>
+                             <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-50">
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" />
+                             </div>
+                             <div className="text-left">
+                                 <p className="font-bold text-xs text-slate-900">{displayName}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{session.user.email}</p>
+                             </div>
+                        </div>
+                    </div>
+                 </div>
+
                  {/* Mobile Header */}
                  <div className="lg:hidden flex justify-between items-center mb-6 sticky top-0 bg-surface/80 backdrop-blur-xl z-30 py-4 px-2 -mx-2 border-b border-slate-100/50">
                      <div className="flex items-center gap-3">
@@ -261,7 +305,7 @@ function App() {
                     {activeView === 'dashboard' && (
                         <div className="space-y-8">
                             
-                            {/* [NUEVO 🔥] Stories Bar */}
+                            {/* Stories Bar */}
                             <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
 
                             {/* AI Projection Text */}
@@ -274,11 +318,11 @@ function App() {
                             
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                                 <div className="xl:col-span-8 space-y-10">
-                                    <div className="md:h-[400px] h-[300px]"><FinancialChart transactions={transactions} /></div>
+                                    <div className="md:h-[450px] h-[300px]"><FinancialChart transactions={transactions} /></div>
                                     <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
                                 </div>
                                 
-                                <div className="xl:col-span-4 space-y-8 sticky top-10">
+                                <div className="xl:col-span-4 space-y-8 sticky top-24">
                                     <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
                                         const diff = val - summary.balance;
                                         if (diff !== 0) {

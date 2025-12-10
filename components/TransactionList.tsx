@@ -76,7 +76,7 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onDelet
         <div className="space-y-8">
           {(Object.entries(grouped) as [string, Transaction[]][]).map(([dateLabel, txs]) => (
               <div key={dateLabel} className="relative">
-                  <div className="sticky top-20 lg:top-4 z-10 mb-4 flex justify-center pointer-events-none">
+                  <div className="sticky top-20 lg:top-24 z-10 mb-4 flex justify-center pointer-events-none">
                       <span className="bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-bold text-slate-500 uppercase tracking-widest shadow-sm border border-slate-100">
                           {dateLabel}
                       </span>
