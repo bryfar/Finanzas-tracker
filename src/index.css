@@ -1,0 +1,44 @@
+/* 
+  Tailwind directives are handled by the CDN script in index.html for this preview environment.
+  In a real build environment, you would uncomment them.
+*/
+
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; */
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 0px; background: transparent; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8fafc; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
+
+/* UI Kit Components Utilities are now handled by Tailwind config in HTML or inline classes */
+.font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+.btn-primary {
+  @apply bg-indigo-600 text-white font-heading font-bold rounded-2xl shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 active:scale-95 transition-all flex items-center justify-center gap-2 py-3 px-6 outline-none focus-visible:ring-4 focus-visible:ring-indigo-200;
+}
+
+.btn-action {
+  @apply bg-lime-500 text-white font-heading font-bold rounded-2xl shadow-lg shadow-lime-500/25 hover:bg-lime-600 active:scale-95 transition-all flex items-center justify-center gap-2 py-3 px-6 outline-none focus-visible:ring-4 focus-visible:ring-lime-100;
+}
+
+.card-base {
+  @apply bg-white rounded-[2rem] shadow-[0_4px_20px_-2px_rgba(99,102,241,0.05)] border border-slate-100/50 hover:shadow-lg transition-shadow duration-300;
+}
+
+.input-base {
+  @apply w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-heading font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-400;
+}
