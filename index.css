@@ -4,14 +4,21 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply font-sans text-slate-800 bg-surface;
-    -webkit-tap-highlight-color: transparent;
-    overscroll-behavior-y: contain;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  :root {
+    --brand-primary: #6366f1;
+    --surface-bg: #f8fafc;
   }
 
-  /* Soporte para notch y barras de sistema */
+  html, body {
+    @apply bg-surface text-slate-800 antialiased;
+    height: 100dvh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    user-select: none;
+  }
+
+  /* Safe Area Support */
   .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .px-safe { 
@@ -21,31 +28,35 @@
 }
 
 @layer components {
-  .card-mobile {
-    @apply bg-white rounded-[2.2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 transition-all active:scale-[0.98];
-  }
-  
-  .bottom-sheet {
-    @apply fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] animate-slide-up;
+  .card-premium {
+    @apply bg-white rounded-[2.5rem] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] border border-slate-100 transition-all active:scale-[0.98];
   }
 
   .input-mobile {
-    @apply w-full bg-slate-50 border-2 border-transparent rounded-2xl p-4 font-heading font-bold text-slate-800 outline-none focus:border-brand-500/20 focus:bg-white transition-all placeholder:text-slate-300;
+    @apply w-full bg-slate-50 border-0 rounded-[1.5rem] p-5 font-heading font-bold text-slate-800 outline-none focus:ring-4 focus:ring-brand-500/10 transition-all placeholder:text-slate-300;
   }
+
+  .btn-floating {
+    @apply bg-slate-900 text-white w-14 h-14 rounded-2xl shadow-xl flex items-center justify-center active:scale-90 active:rotate-45 transition-all;
+  }
+
+  .bottom-sheet {
+    @apply fixed inset-x-0 bottom-0 z-[100] bg-white rounded-t-[3rem] shadow-[0_-20px_60px_rgba(0,0,0,0.1)] flex flex-col;
+    height: calc(100dvh - 2rem);
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bottom-sheet-open { transform: translateY(0); }
 }
 
-/* Scrollbars invisibles para carousels */
+/* Custom Scrollbars for Desktop */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
-.animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-
-@keyframes pop-in {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-.animate-pop-in { animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-float { animation: float 3s ease-in-out infinite; }
