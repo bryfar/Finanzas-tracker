@@ -66,8 +66,8 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/20"></div>
             </div>
 
-            {/* Header Indicators */}
-            <div className="relative z-30 pt-4 px-4 flex gap-1.5">
+            {/* Header Indicators - Respecting Safe Area Top */}
+            <div className="relative z-30 pt-safe px-4 flex gap-1.5 mt-4">
                 {snaps.map((_, idx) => (
                     <div key={idx} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                         <div className={`h-full bg-white transition-all duration-300 ${idx === activeIndex ? 'w-full' : idx < activeIndex ? 'w-full' : 'w-0'}`}></div>
@@ -75,7 +75,7 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
                 ))}
             </div>
 
-            <button onClick={onClose} className="absolute top-10 right-6 z-40 text-white/80 p-2 bg-black/20 rounded-full backdrop-blur-md active:scale-90 transition-transform">
+            <button onClick={onClose} className="absolute top-[calc(env(safe-area-inset-top,0px)+2.5rem)] right-6 z-40 text-white/80 p-2 bg-black/20 rounded-full backdrop-blur-md active:scale-90 transition-transform">
                 <X size={24} strokeWidth={3} />
             </button>
 
@@ -83,9 +83,9 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
             <div className="absolute inset-y-0 left-0 w-1/4 z-20" onClick={handlePrev}></div>
             <div className="absolute inset-y-0 right-0 w-1/4 z-20" onClick={handleNext}></div>
 
-            {/* Content Area */}
+            {/* Content Area - Respecting Safe Area Bottom */}
             <div 
-                className="relative z-30 flex-1 flex flex-col justify-end p-8 pb-16"
+                className="relative z-30 flex-1 flex flex-col justify-end p-8 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)]"
                 onClick={() => handleDoubleTap(currentSnap)}
             >
                  <div className="space-y-4 animate-slide-up">
@@ -95,10 +95,10 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
                          </div>
                      )}
                      
-                     <h2 className="text-4xl font-heading font-black text-white leading-[1.1] drop-shadow-2xl">
+                     <h2 className="text-3xl md:text-4xl font-heading font-black text-white leading-[1.1] drop-shadow-2xl">
                          {currentSnap?.content.title}
                      </h2>
-                     <p className="text-xl text-slate-100 font-medium leading-relaxed drop-shadow-lg opacity-90">
+                     <p className="text-lg md:text-xl text-slate-100 font-medium leading-relaxed drop-shadow-lg opacity-90">
                          {currentSnap?.content.subtitle}
                      </p>
 
@@ -125,7 +125,7 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
             )}
             
             {processing && (
-                 <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-8 py-3 rounded-full font-black text-sm shadow-2xl animate-pop-in flex items-center gap-3 border-2 border-white/20">
+                 <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-8 py-3 rounded-full font-black text-sm shadow-2xl animate-pop-in flex items-center gap-3 border-2 border-white/20">
                      <Sparkles size={20} /> ¡Ahorro registrado!
                  </div>
             )}

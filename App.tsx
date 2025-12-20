@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-// Added Sparkles to the lucide-react import list
 import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, Sparkles } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
@@ -135,10 +134,10 @@ function App() {
   if (!session && !isInitializing) return <Auth />;
   
   if (isSyncing || isInitializing) return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface pt-safe pb-safe pl-safe pr-safe">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
-          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">FinanzasAI</h2>
-          <p className="text-slate-500 font-medium animate-pulse">Sincronizando tus datos...</p>
+          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2 text-center px-4">FinanzasAI</h2>
+          <p className="text-slate-500 font-medium animate-pulse text-center px-4">Sincronizando tus datos financieros...</p>
       </div>
   );
 
@@ -171,7 +170,7 @@ function App() {
         }} />}
 
         {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex flex-col w-72 p-4 h-screen sticky top-0 z-40">
+        <aside className="hidden lg:flex flex-col w-72 p-4 h-screen sticky top-0 z-40 pl-safe">
             <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6 overflow-hidden">
                  <div className="flex items-center gap-3 mb-8">
                     <Mascot variant="idle" size={48} />
@@ -196,7 +195,7 @@ function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 h-[100dvh] overflow-y-auto custom-scrollbar relative bg-surface">
-             <div className="p-4 md:p-8 max-w-[1400px] mx-auto pb-32 lg:pb-12">
+             <div className="p-4 md:p-8 max-w-[1400px] mx-auto pb-32 lg:pb-12 pt-safe pl-safe pr-safe">
                  
                  {/* Desktop Header */}
                  <header className="hidden lg:flex justify-between items-center mb-8">
@@ -215,20 +214,18 @@ function App() {
                     </div>
                  </header>
 
-                 {/* Mobile Header */}
+                 {/* Mobile Header - Native Layout */}
                  <header className="lg:hidden flex justify-between items-center mb-6 pt-2">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-[1rem] bg-white border border-slate-100 flex items-center justify-center overflow-hidden active:scale-95 transition-transform" onClick={() => setActiveView('settings')}>
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 shrink-0 rounded-[1rem] bg-white border border-slate-100 flex items-center justify-center overflow-hidden active:scale-95 transition-transform" onClick={() => setActiveView('settings')}>
                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}&backgroundColor=ffffff`} className="w-full h-full object-cover" />
                         </div>
-                        <div>
-                            <h1 className="text-lg font-heading font-black text-slate-900 leading-none">{getPageTitle()}</h1>
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-1">{displayName.split(' ')[0]}</p>
+                        <div className="min-w-0">
+                            <h1 className="text-lg font-heading font-black text-slate-900 leading-none truncate">{getPageTitle()}</h1>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-1 truncate">{displayName.split(' ')[0]}</p>
                         </div>
                     </div>
-                    <button onClick={() => {
-                        addNotification('info', '¡Finny está vigilando tus finanzas!');
-                    }} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
+                    <button onClick={() => addNotification('info', '¡Finny está vigilando tus finanzas!')} className="w-10 h-10 shrink-0 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
                          <Bell size={20} />
                     </button>
                  </header>
@@ -239,13 +236,13 @@ function App() {
                             <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
                             
                             <div className="lg:hidden">
-                                <div className="bg-brand-600 rounded-[2.5rem] p-6 text-white shadow-2xl shadow-brand-500/20 relative overflow-hidden">
+                                <div className="bg-brand-600 rounded-[2.5rem] p-6 text-white shadow-2xl shadow-brand-500/20 relative overflow-hidden active:scale-[0.98] transition-transform">
                                     <div className="relative z-10">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Mi Balance</p>
                                         <h2 className="text-4xl font-heading font-black">S/. {summary.balance.toLocaleString()}</h2>
                                         <div className="mt-5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/10 w-fit px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10">
                                             <Sparkles size={12} className="text-amber-300" />
-                                            <span>Próximo mes: S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                            <span>Sugerencia: S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })} al cierre</span>
                                         </div>
                                     </div>
                                     <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12">
@@ -313,8 +310,8 @@ function App() {
              </div>
         </main>
 
-        {/* Mobile Navigation Bar */}
-        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-16 bg-white/80 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-2 z-40 flex justify-between items-center border border-white/50">
+        {/* Mobile Navigation Bar - Fixed with Safe Area Bottom */}
+        <nav className="lg:hidden fixed bottom-6 left-4 right-4 bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-2 z-40 flex justify-between items-center border border-white/50 mb-safe">
              {[
                 { id: 'dashboard', icon: LayoutDashboard },
                 { id: 'analysis', icon: BarChart3 },
@@ -327,8 +324,8 @@ function App() {
                     onClick={() => item.main ? setShowTxModal(true) : setActiveView(item.id as any)} 
                     className={`relative flex items-center justify-center transition-all ${
                         item.main 
-                        ? 'bg-brand-600 text-white w-14 h-14 rounded-full shadow-lg shadow-brand-500/30 -mt-1 w-14 h-14 active:scale-90' 
-                        : 'w-12 h-12 rounded-full'
+                        ? 'bg-brand-600 text-white w-14 h-14 rounded-[1.8rem] shadow-lg shadow-brand-500/30 -mt-10 border-4 border-surface active:scale-90' 
+                        : 'w-12 h-12 rounded-full active:bg-slate-100'
                     }`}
                  >
                      <item.icon size={item.main ? 28 : 22} className={!item.main && activeView === item.id ? 'text-brand-600 scale-110' : 'text-slate-400'} />
