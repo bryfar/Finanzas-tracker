@@ -27,7 +27,8 @@ import { generateDailySnaps } from './services/geminiService';
 
 function App() {
   const [session, setSession] = useState<any>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'analysis' | 'assets' | 'goals' | 'education' | 'settings'>('dashboard');
+  // Nuevo orden de vistas: Inicio, Analisis, Metas, Patrimonio, Settings
+  const [activeView, setActiveView] = useState<'dashboard' | 'analysis' | 'goals' | 'assets' | 'settings'>('dashboard');
   const [showTxModal, setShowTxModal] = useState(false);
   const [showRecModal, setShowRecModal] = useState(false);
   const [showSnaps, setShowSnaps] = useState(false); 
@@ -162,7 +163,7 @@ function App() {
             />
         )}
 
-        {/* Desktop Sidebar */}
+        {/* Sidebar Desktop */}
         <aside className="hidden lg:flex flex-col w-80 p-6 h-screen border-r border-slate-100 bg-white">
             <div className="flex items-center gap-3 mb-12 cursor-default group">
                <div className="p-1 bg-brand-50 rounded-2xl group-hover:bg-brand-100 transition-colors">
@@ -174,9 +175,8 @@ function App() {
                 {[
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
                     { id: 'analysis', icon: BarChart3, label: 'Análisis' },
-                    { id: 'assets', icon: Wallet, label: 'Inversiones' },
-                    { id: 'goals', icon: Target, label: 'Metas' },
-                    { id: 'education', icon: BookOpen, label: 'Educación' },
+                    { id: 'goals', icon: Target, label: 'Metas Inteligentes' },
+                    { id: 'assets', icon: Wallet, label: 'Patrimonio' },
                     { id: 'settings', icon: Settings, label: 'Ajustes' },
                 ].map(item => (
                     <button key={item.id} onClick={() => setActiveView(item.id as any)} className={`w-full flex items-center gap-4 px-6 py-4 rounded-[1.5rem] font-heading font-bold text-sm transition-all ${activeView === item.id ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/20 scale-105' : 'text-slate-400 hover:bg-slate-50'}`}>
@@ -186,31 +186,26 @@ function App() {
             </nav>
         </aside>
 
-        {/* Mobile Header */}
+        {/* Header Mobile */}
         <header className="lg:hidden shrink-0 pt-safe px-6 pb-4 bg-surface/80 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between z-40">
             <div className="flex items-center gap-3">
                 <div onClick={() => setActiveView('settings')} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 overflow-hidden active:scale-90 transition-transform">
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-heading font-black text-slate-900 leading-none">Mi Billetera</h1>
+                    <h1 className="text-lg font-heading font-black text-slate-900 leading-none">{activeView === 'dashboard' ? 'Mi Billetera' : activeView === 'analysis' ? 'Análisis' : activeView === 'goals' ? 'Metas' : 'Patrimonio'}</h1>
                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{displayName}</p>
                 </div>
             </div>
             <div className="flex gap-2">
-                <button 
-                  onClick={() => setShowRecModal(true)} 
-                  className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex flex-col items-center justify-center text-brand-600 shadow-sm active:scale-90 active:bg-brand-50 transition-all group"
-                  title="Programación de finanzas"
-                >
-                    <CalendarClock size={22} className="group-hover:rotate-12" />
-                    <span className="text-[6px] font-black uppercase mt-0.5">Programar</span>
+                <button onClick={() => setShowRecModal(true)} className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex flex-col items-center justify-center text-brand-600 shadow-sm active:scale-90 transition-all">
+                    <CalendarClock size={22} />
                 </button>
                 <button className="w-11 h-11 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90"><Bell size={20} /></button>
             </div>
         </header>
 
-        {/* Main Content Area */}
+        {/* Main Area */}
         <main className="flex-1 overflow-y-auto no-scrollbar relative">
             <div className="max-w-4xl mx-auto px-6 pt-6 pb-40 lg:py-12 space-y-10">
                 {activeView === 'dashboard' && (
@@ -221,12 +216,12 @@ function App() {
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-2 opacity-60">
                                   <Zap size={14} fill="currentColor" />
-                                  <p className="text-[11px] font-black uppercase tracking-[0.2em]">Mi Balance Disponible</p>
+                                  <p className="text-[11px] font-black uppercase tracking-[0.2em]">Balance Disponible</p>
                                 </div>
                                 <h2 className="text-6xl font-heading font-black tracking-tight leading-none">S/. {summary.balance.toLocaleString()}</h2>
                                 <div className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/10 w-fit px-5 py-2.5 rounded-2xl backdrop-blur-md border border-white/10 shadow-sm">
                                     <Sparkles size={14} className="text-amber-300" />
-                                    <span>Cierre mes estimado: <span className="text-white">S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
+                                    <span>Cierre mes: <span className="text-white">S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></span>
                                 </div>
                             </div>
                             <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 transition-transform group-hover:scale-110 duration-700">
@@ -261,12 +256,9 @@ function App() {
                                 <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
                                     const diff = val - summary.balance;
                                     if (diff !== 0) {
-                                        await transactionService.add(session.user.id, { amount: Math.abs(diff), type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE, description: 'Ajuste Manual de Bóveda', date: new Date().toISOString().split('T')[0], isFixed: false, category: Category.OTHER });
+                                        await transactionService.add(session.user.id, { amount: Math.abs(diff), type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE, description: 'Ajuste Manual', date: new Date().toISOString().split('T')[0], isFixed: false, category: Category.OTHER });
                                         loadAllData(session.user.id);
                                     }
-                                }} />
-                                <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { 
-                                    await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); 
                                 }} />
                                 <AIAdvisor transactions={transactions} streak={streak} />
                             </div>
@@ -274,25 +266,24 @@ function App() {
                     </div>
                 )}
                 {activeView === 'analysis' && <AnalysisView transactions={transactions} subscriptions={subscriptions} userId={session.user.id} />}
-                {activeView === 'assets' && <AssetsView accounts={accounts} userId={session.user.id} />}
                 {activeView === 'goals' && <GoalsSection goals={goals} onAddGoal={async (g) => { 
                     await transactionService.addGoal(session.user.id, g); loadAllData(session.user.id); 
                 }} onUpdateGoal={async (id, a) => { 
                     await transactionService.updateGoalAmount(session.user.id, id, a); loadAllData(session.user.id); 
                 }} />}
-                {activeView === 'education' && <EducationView transactions={transactions} />}
+                {activeView === 'assets' && <AssetsView accounts={accounts} userId={session.user.id} />}
                 {activeView === 'settings' && <SettingsView userEmail={session.user.email} userName={displayName} streak={streak} onLogout={() => authService.signOut()} onToggleSound={() => {}} onUpdateName={() => loadAllData(session.user.id)} />}
             </div>
         </main>
 
-        {/* Mobile Navigation Bar */}
-        <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.15)] p-2.5 z-40 flex justify-between items-center border border-white/50 mb-safe scale-100 hover:scale-[1.02] transition-transform">
+        {/* Tab Bar Mobile */}
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.15)] p-2.5 z-40 flex justify-between items-center border border-white/50 mb-safe">
              {[
-                { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
-                { id: 'analysis', icon: BarChart3, label: 'Análisis' },
+                { id: 'dashboard', icon: LayoutDashboard },
+                { id: 'analysis', icon: BarChart3 },
                 { id: 'add', icon: Plus, main: true },
-                { id: 'goals', icon: Target, label: 'Metas' },
-                { id: 'assets', icon: Wallet, label: 'Inversiones' },
+                { id: 'goals', icon: Target },
+                { id: 'assets', icon: Wallet },
              ].map(item => (
                  <button 
                     key={item.id} 
@@ -305,7 +296,7 @@ function App() {
                  >
                      <item.icon size={item.main ? 30 : 22} className={!item.main && activeView === item.id ? 'text-brand-600' : 'text-slate-400'} strokeWidth={item.main ? 3 : 2.5} />
                      {!item.main && activeView === item.id && (
-                         <span className="absolute -bottom-1 w-1.5 h-1.5 bg-brand-600 rounded-full animate-bounce"></span>
+                         <span className="absolute -bottom-1 w-1.5 h-1.5 bg-brand-600 rounded-full"></span>
                      )}
                  </button>
              ))}
