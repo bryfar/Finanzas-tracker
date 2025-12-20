@@ -60,8 +60,9 @@ const FinancialChart: React.FC<FinancialChartProps> = ({ transactions }) => {
     return acc;
   }, {} as Record<string, { date: string, income: number, expense: number }>);
 
-  const areaData = Object.values(timelineDataMap)
-    .sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  // Fix: Cast the results of Object.values to the expected type to prevent unknown access errors in sort
+  const areaData = (Object.values(timelineDataMap) as { date: string, income: number, expense: number }[])
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-30);
 
   // Summary for header

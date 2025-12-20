@@ -1,8 +1,11 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal } from "../types";
 
+// Initialize the Google GenAI SDK with the API key from environment variables
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const modelId = "gemini-2.5-flash";
+// Use gemini-3-flash-preview for basic text tasks
+const modelId = "gemini-3-flash-preview";
 
 export const chatWithFinancialAdvisor = async (
   history: { role: 'user' | 'model', text: string }[], 
@@ -38,16 +41,19 @@ export const chatWithFinancialAdvisor = async (
         parts: [{ text: h.text }]
     }));
 
+    // Create a chat session with system instruction
     const chatWithHistory = ai.chats.create({
         model: modelId,
         config: { systemInstruction },
         history: chatHistory
     });
 
+    // Send the message and get the response
     const response = await chatWithHistory.sendMessage({
       message: currentMessage
     });
 
+    // Extract text output using the .text property
     return response.text || "No pude procesar tu respuesta.";
   } catch (error) {
     console.error("Chat error:", error);
