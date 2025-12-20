@@ -6,8 +6,14 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: true,
     autoRefreshToken: true,
+    persistSession: true,
     detectSessionInUrl: true
+  },
+  global: {
+    headers: { 'x-application-name': 'finanzas-ai' }
   }
 });
+
+// Test de conectividad silencioso
+supabase.auth.getSession().catch(err => console.warn("Supabase auth check failed:", err));

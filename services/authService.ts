@@ -9,7 +9,8 @@ export const authService = {
       options: {
         data: {
           full_name: name,
-        }
+        },
+        emailRedirectTo: window.location.origin
       }
     });
     if (error) throw error;
@@ -20,6 +21,22 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async resetPassword(email: string) {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}?type=recovery`,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePassword(password: string) {
+    const { data, error } = await supabase.auth.updateUser({
+      password: password
     });
     if (error) throw error;
     return data;

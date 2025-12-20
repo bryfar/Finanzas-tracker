@@ -1,9 +1,9 @@
+
 import { supabase } from './supabaseClient';
 import { Transaction, TransactionType, Category, Account, Goal, Subscription } from '../types';
 
 const LOCAL_STORAGE_KEY_PREFIX = 'finanzas_ai_data_';
 
-// Generic Helper for Local Storage
 const getLocal = <T>(userId: string, key: string): T[] => {
   try {
     const data = localStorage.getItem(`${LOCAL_STORAGE_KEY_PREFIX}${userId}_${key}`);
@@ -58,12 +58,12 @@ const mapSubFromDb = (item: any): Subscription => ({
 
 export const transactionService = {
   // --- TRANSACTIONS ---
-  // Fix: Added missing getAll implementation
   async getAll(userId: string) {
     try {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', userId) // CRÍTICO: Filtro por usuario
         .order('date', { ascending: false });
       
       if (error) throw error;
@@ -71,26 +71,24 @@ export const transactionService = {
       saveLocal(userId, 'transactions', mapped);
       return mapped;
     } catch (error) {
-      console.error('Error getting transactions:', error);
+      console.error('Error fetching transactions:', error);
       return getLocal<Transaction>(userId, 'transactions');
     }
   },
 
-  // Fix: Added missing checkPossibleDuplicate method
   async checkPossibleDuplicate(userId: string, amount: number, description: string): Promise<boolean> {
-      const recent = await this.getAll(userId);
-      const now = new Date();
+      const recent = getLocal<Transaction>(userId, 'transactions');
+      const now = new Date().toISOString().split('T')[0];
       
       const duplicate = recent.find(t => {
           return t.amount === amount && 
                  t.description.toLowerCase() === description.toLowerCase() &&
-                 t.date === now.toISOString().split('T')[0];
+                 t.date === now;
       });
 
       return !!duplicate;
   },
 
-  // Fix: Completed the truncated add method and fixed syntax error
   async add(userId: string, transaction: Omit<Transaction, 'id'>) {
     try {
       const { data, error } = await supabase
@@ -118,34 +116,41 @@ export const transactionService = {
       saveLocal(userId, 'transactions', [newTx, ...current]);
       return newTx;
     } catch (error) {
+      console.error("Error adding transaction:", error);
       const newTx: Transaction = { ...transaction, id: crypto.randomUUID() };
       const current = getLocal<Transaction>(userId, 'transactions');
       saveLocal(userId, 'transactions', [newTx, ...current]);
-      
-      if (transaction.accountId) {
-        await this.updateAccountBalance(userId, transaction.accountId, transaction.amount, transaction.type, true);
-      }
       return newTx;
     }
   },
 
-  // Fix: Added missing delete method
   async delete(userId: string, id: string) {
     try {
-      await supabase.from('transactions').delete().eq('id', id);
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
       const current = getLocal<Transaction>(userId, 'transactions');
       saveLocal(userId, 'transactions', current.filter(t => t.id !== id));
     } catch (error) {
+      console.error("Error deleting transaction:", error);
       const current = getLocal<Transaction>(userId, 'transactions');
       saveLocal(userId, 'transactions', current.filter(t => t.id !== id));
     }
   },
 
   // --- ACCOUNTS ---
-  // Fix: Added missing getAccounts method
   async getAccounts(userId: string) {
     try {
-      const { data, error } = await supabase.from('accounts').select('*').order('name');
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('name');
+      
       if (error) throw error;
       const mapped = (data || []).map(mapAccountFromDb);
       saveLocal(userId, 'accounts', mapped);
@@ -155,10 +160,13 @@ export const transactionService = {
     }
   },
 
-  // Fix: Added missing addAccount method
   async addAccount(userId: string, account: Omit<Account, 'id'>) {
     try {
-      const { data, error } = await supabase.from('accounts').insert([{ ...account, user_id: userId }]).select().single();
+      const { data, error } = await supabase
+        .from('accounts')
+        .insert([{ ...account, user_id: userId }])
+        .select().single();
+      
       if (error) throw error;
       const newAcc = mapAccountFromDb(data);
       const current = getLocal<Account>(userId, 'accounts');
@@ -172,28 +180,26 @@ export const transactionService = {
     }
   },
 
-  // Fix: Added missing updateAccountBalance method
-  async updateAccountBalance(userId: string, accountId: string, amount: number, type: TransactionType, offlineOnly = false) {
+  async updateAccountBalance(userId: string, accountId: string, amount: number, type: TransactionType) {
     const adjustment = type === TransactionType.INCOME ? amount : -amount;
-    
     const accounts = getLocal<Account>(userId, 'accounts');
-    const updatedAccounts = accounts.map(acc => 
-      acc.id === accountId ? { ...acc, balance: acc.balance + adjustment } : acc
-    );
-    saveLocal(userId, 'accounts', updatedAccounts);
-
-    if (!offlineOnly) {
-      try {
-        const acc = accounts.find(a => a.id === accountId);
-        if (acc) {
-            const newBalance = acc.balance + adjustment;
-            await supabase.from('accounts').update({ balance: newBalance }).eq('id', accountId);
-        }
-      } catch (e) { console.error('Failed to update remote balance', e); }
+    const acc = accounts.find(a => a.id === accountId);
+    
+    if (acc) {
+        const newBalance = acc.balance + adjustment;
+        try {
+            await supabase
+                .from('accounts')
+                .update({ balance: newBalance })
+                .eq('id', accountId)
+                .eq('user_id', userId);
+        } catch (e) {}
+        
+        const updatedAccounts = accounts.map(a => a.id === accountId ? { ...a, balance: newBalance } : a);
+        saveLocal(userId, 'accounts', updatedAccounts);
     }
   },
 
-  // Fix: Added missing transfer method
   async transfer(userId: string, fromId: string, toId: string, amount: number) {
      await this.add(userId, {
          date: new Date().toISOString().split('T')[0],
@@ -217,18 +223,22 @@ export const transactionService = {
   },
 
   // --- GOALS ---
-  // Fix: Added missing getGoals method
   async getGoals(userId: string) {
     try {
-      const { data, error } = await supabase.from('goals').select('*');
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', userId);
+      
       if (error) throw error;
       const mapped = (data || []).map(mapGoalFromDb);
       saveLocal(userId, 'goals', mapped);
       return mapped;
-    } catch (error) { return getLocal<Goal>(userId, 'goals'); }
+    } catch (error) { 
+        return getLocal<Goal>(userId, 'goals'); 
+    }
   },
 
-  // Fix: Added missing addGoal method
   async addGoal(userId: string, goal: Omit<Goal, 'id'>) {
     try {
         const payload = {
@@ -255,10 +265,9 @@ export const transactionService = {
     }
   },
 
-  // Fix: Added missing updateGoalAmount method
   async updateGoalAmount(userId: string, goalId: string, newAmount: number) {
       try {
-          await supabase.from('goals').update({ current_amount: newAmount }).eq('id', goalId);
+          await supabase.from('goals').update({ current_amount: newAmount }).eq('id', goalId).eq('user_id', userId);
           const goals = getLocal<Goal>(userId, 'goals');
           const updated = goals.map(g => g.id === goalId ? { ...g, currentAmount: newAmount } : g);
           saveLocal(userId, 'goals', updated);
@@ -269,13 +278,11 @@ export const transactionService = {
       }
   },
 
-  // Fix: Added missing quickSave method
   async quickSave(userId: string, goalId: string, amount: number) {
       const accounts = await this.getAccounts(userId);
       const sourceAccount = accounts.find(a => a.type === 'BANK' && a.balance >= amount) || accounts[0];
       
       if (!sourceAccount) throw new Error("No hay cuentas disponibles");
-      if (sourceAccount.balance < amount) throw new Error("Saldo insuficiente");
 
       const goals = await this.getGoals(userId);
       const targetGoal = goals.find(g => g.id === goalId);
@@ -296,18 +303,22 @@ export const transactionService = {
   },
 
   // --- SUBSCRIPTIONS ---
-  // Fix: Added missing getSubscriptions method
   async getSubscriptions(userId: string) {
       try {
-          const { data, error } = await supabase.from('subscriptions').select('*');
+          const { data, error } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', userId);
+          
           if (error) throw error;
           const mapped = (data || []).map(mapSubFromDb);
           saveLocal(userId, 'subscriptions', mapped);
           return mapped;
-      } catch (error) { return getLocal<Subscription>(userId, 'subscriptions'); }
+      } catch (error) { 
+          return getLocal<Subscription>(userId, 'subscriptions'); 
+      }
   },
 
-  // Fix: Added missing addSubscription method
   async addSubscription(userId: string, sub: Omit<Subscription, 'id'>) {
       try {
           const payload = {
