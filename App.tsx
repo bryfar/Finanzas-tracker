@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -131,13 +131,24 @@ function App() {
   if (isSyncing || isInitializing) return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
-          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">Sincronizando...</h2>
-          <p className="text-slate-500 font-medium animate-pulse">Finny está organizando tus cuentas</p>
+          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">FinanzasAI</h2>
+          <p className="text-slate-500 font-medium animate-pulse">Sincronizando tus datos...</p>
       </div>
   );
 
   const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   const avatarSeed = session.user.user_metadata?.avatar_seed || session.user.email;
+
+  const getPageTitle = () => {
+    switch(activeView) {
+        case 'analysis': return 'Análisis';
+        case 'assets': return 'Inversiones';
+        case 'goals': return 'Metas';
+        case 'education': return 'Educación';
+        case 'settings': return 'Ajustes';
+        default: return 'Inicio';
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] bg-surface font-sans text-slate-800 flex overflow-hidden">
@@ -146,8 +157,9 @@ function App() {
         
         {showSnaps && <FinnySnaps snaps={dailySnaps} onClose={() => setShowSnaps(false)} userId={session.user.id} userMetadata={session.user.user_metadata} onRefreshData={() => loadAllData(session.user.id)} />}
 
+        {/* Desktop Sidebar */}
         <aside className="hidden lg:flex flex-col w-72 p-4 h-screen sticky top-0 z-40">
-            <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6">
+            <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6 overflow-hidden">
                  <div className="flex items-center gap-3 mb-8">
                     <Mascot variant="idle" size={48} />
                     <span className="font-heading font-black text-xl text-slate-900 tracking-tight">Finanzas<span className="text-brand-500">AI</span></span>
@@ -169,16 +181,71 @@ function App() {
             </div>
         </aside>
 
+        {/* Main Content Area */}
         <main className="flex-1 h-[100dvh] overflow-y-auto custom-scrollbar relative bg-surface">
-             <div className="p-4 lg:p-8 max-w-[1400px] mx-auto pb-48 lg:pb-12">
+             <div className="p-4 md:p-8 max-w-[1400px] mx-auto pb-32 lg:pb-12">
+                 
+                 {/* Desktop Header */}
+                 <header className="hidden lg:flex justify-between items-center mb-8">
+                    <div>
+                        <h1 className="text-2xl font-heading font-black text-slate-900">{getPageTitle()}</h1>
+                        <p className="text-xs text-slate-500 font-medium">Hola, {displayName.split(' ')[0]}</p>
+                    </div>
+                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('settings')}>
+                        <div className="text-right">
+                            <p className="font-bold text-xs group-hover:text-brand-600 transition-colors">{displayName}</p>
+                            <p className="text-[10px] text-slate-400">S/. {summary.balance.toLocaleString()}</p>
+                        </div>
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-100 overflow-hidden group-hover:shadow-md transition-all">
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" />
+                        </div>
+                    </div>
+                 </header>
+
+                 {/* Mobile Header */}
+                 <header className="lg:hidden flex justify-between items-center mb-6 pt-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden">
+                            <Mascot variant="happy" size={32} />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-heading font-black text-slate-900">{getPageTitle()}</h1>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{displayName.split(' ')[0]}</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setActiveView('settings')} className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
+                         <Bell size={20} />
+                    </button>
+                 </header>
+
                  <div className="space-y-6">
                     {activeView === 'dashboard' && (
                         <div className="space-y-6">
                             <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
+                            
+                            <div className="lg:hidden">
+                                <div className="bg-indigo-600 rounded-3xl p-5 text-white shadow-xl shadow-indigo-200 relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Balance Total</p>
+                                        <h2 className="text-3xl font-heading font-black">S/. {summary.balance.toLocaleString()}</h2>
+                                        <div className="mt-4 flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10">
+                                            <Mascot variant="thinking" size={16} />
+                                            <span>Proyectado mes: S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                        </div>
+                                    </div>
+                                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                                        <Wallet size={120} />
+                                    </div>
+                                </div>
+                            </div>
+
                             <AccountsWidget accounts={accounts} onAddAccount={async (a) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f,t,a) => { await transactionService.transfer(session.user.id, f, t, a); loadAllData(session.user.id); }} />
+                            
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                                 <div className="xl:col-span-8 space-y-6">
-                                    <FinancialChart transactions={transactions} />
+                                    <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-soft">
+                                        <FinancialChart transactions={transactions} />
+                                    </div>
                                     <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
                                     <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); }} />
                                 </div>
@@ -204,7 +271,8 @@ function App() {
              </div>
         </main>
 
-        <nav className="lg:hidden fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-2 z-40 flex justify-between items-center border border-slate-200/50">
+        {/* Mobile Navigation Bar */}
+        <nav className="lg:hidden fixed bottom-6 left-6 right-6 h-16 bg-white/80 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-2 z-40 flex justify-between items-center border border-white/50">
              {[
                 { id: 'dashboard', icon: LayoutDashboard },
                 { id: 'analysis', icon: BarChart3 },
@@ -212,8 +280,19 @@ function App() {
                 { id: 'goals', icon: Target },
                 { id: 'assets', icon: Wallet },
              ].map(item => (
-                 <button key={item.id} onClick={() => item.main ? setShowTxModal(true) : setActiveView(item.id as any)} className={`relative w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${item.main ? 'bg-brand-600 text-white shadow-lg -mt-10 w-16 h-16 rounded-[2rem] border-4 border-surface' : activeView === item.id ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}>
-                     <item.icon size={item.main ? 32 : 24} />
+                 <button 
+                    key={item.id} 
+                    onClick={() => item.main ? setShowTxModal(true) : setActiveView(item.id as any)} 
+                    className={`relative flex items-center justify-center transition-all ${
+                        item.main 
+                        ? 'bg-brand-600 text-white w-14 h-14 rounded-full shadow-lg shadow-brand-500/30 -mt-1 w-14 h-14 active:scale-90' 
+                        : 'w-12 h-12 rounded-full'
+                    }`}
+                 >
+                     <item.icon size={item.main ? 28 : 22} className={!item.main && activeView === item.id ? 'text-brand-600 scale-110' : 'text-slate-400'} />
+                     {!item.main && activeView === item.id && (
+                         <span className="absolute -bottom-1 w-1 h-1 bg-brand-600 rounded-full"></span>
+                     )}
                  </button>
              ))}
         </nav>

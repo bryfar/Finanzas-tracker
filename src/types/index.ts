@@ -30,6 +30,18 @@ export interface Account {
   icon?: string;
 }
 
+// Added missing Investment interface to fix compilation error in src/services/transactionService.ts
+export interface Investment {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'EMERGENCY_FUND' | 'FIXED_TERM' | 'STOCKS' | 'CRYPTO' | 'SAVINGS';
+  amount: number;
+  interestRate: number; // Tasa Anual
+  institution: string;
+  startDate?: string;
+}
+
 export interface Goal {
   id: string;
   name: string;

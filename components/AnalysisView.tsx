@@ -15,7 +15,7 @@ interface AnalysisViewProps {
 }
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions, userId }) => {
-  const [view, setView] = useState<'CALENDAR' | 'REPORT' | 'STRATEGY' | 'INSIGHTS'>('STRATEGY');
+  const [view, setView] = useState<'STRATEGY' | 'CALENDAR' | 'REPORT' | 'INSIGHTS'>('STRATEGY');
   const [anomalies, setAnomalies] = useState<any[]>([]);
 
   useEffect(() => {
@@ -25,57 +25,60 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions
   }, [view, transactions]);
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
-       <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit overflow-x-auto max-w-full">
+    <div className="space-y-6 h-full flex flex-col pb-12">
+       {/* Optimized Scrollable Tabs for Mobile */}
+       <div className="flex gap-2 p-1 bg-slate-100/50 rounded-2xl w-full overflow-x-auto no-scrollbar snap-x">
            {[
-               { id: 'STRATEGY', icon: Target, label: 'Estrategia 50/20/30' },
+               { id: 'STRATEGY', icon: Target, label: 'Estrategia' },
                { id: 'CALENDAR', icon: Calendar, label: 'Calendario' },
-               { id: 'REPORT', icon: BarChart2, label: 'Reporte' },
-               { id: 'INSIGHTS', icon: Zap, label: 'Insights IA' },
+               { id: 'REPORT', icon: BarChart2, label: 'Gráficos' },
+               { id: 'INSIGHTS', icon: Zap, label: 'IA Insights' },
            ].map(item => (
                <button
                   key={item.id}
                   onClick={() => setView(item.id as any)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap ${view === item.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`px-4 py-2.5 rounded-xl text-[10px] lg:text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all whitespace-nowrap snap-start ${view === item.id ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                >
-                   <item.icon size={16} /> {item.label}
+                   <item.icon size={16} strokeWidth={2.5} /> {item.label}
                </button>
            ))}
        </div>
 
-       <div className="flex-1 min-h-0">
+       <div className="flex-1 min-h-0 animate-fade-in">
            {view === 'STRATEGY' && <SavingsStrategy transactions={transactions} userId={userId} />}
            {view === 'CALENDAR' && <FinancialCalendar transactions={transactions} subscriptions={subscriptions} />}
            {view === 'REPORT' && (
-               <div className="h-[600px]">
+               <div className="h-[500px] lg:h-[600px]">
                    <FinancialChart transactions={transactions} />
                </div>
            )}
            {view === 'INSIGHTS' && (
                <div className="space-y-6">
-                   <div className="bg-brand-600 rounded-[2.5rem] p-8 text-white relative overflow-hidden">
+                   <div className="bg-indigo-600 rounded-[2rem] p-6 lg:p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-100">
                         <div className="absolute right-0 top-0 opacity-10">
-                            <Mascot variant="thinking" size={150} />
+                            <Mascot variant="thinking" size={120} />
                         </div>
-                        <h3 className="text-2xl font-heading font-black mb-2">Análisis Inteligente</h3>
-                        <p className="opacity-80 max-w-sm">Finny busca patrones extraños en tus gastos para ayudarte a ahorrar.</p>
+                        <h3 className="text-xl lg:text-2xl font-heading font-black mb-2">Análisis de Finny</h3>
+                        <p className="opacity-80 text-xs lg:text-sm max-w-sm font-medium">He analizado tus hábitos recientes y esto es lo que encontré...</p>
                    </div>
 
                    <div className="space-y-4">
                        {anomalies.length === 0 ? (
-                           <div className="text-center py-12">
+                           <div className="text-center py-16 bg-white rounded-[2rem] border border-slate-100">
                                <Mascot variant="happy" size={100} className="mx-auto mb-4" />
-                               <p className="text-slate-500 font-bold">Todo se ve normal por aquí.</p>
+                               <p className="text-slate-500 font-black text-sm uppercase tracking-widest">Sin anomalías detectadas</p>
+                               <p className="text-[10px] text-slate-400 mt-1">¡Tus gastos siguen un patrón saludable!</p>
                            </div>
                        ) : (
                            anomalies.map(a => (
-                               <div key={a.id} className="card-base p-4 flex gap-4 items-start border-l-4 border-l-yellow-400">
-                                   <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
+                               <div key={a.id} className="bg-white p-5 rounded-[1.5rem] flex gap-4 items-start border border-slate-100 shadow-sm border-l-4 border-l-amber-400 transition-transform active:scale-[0.98]">
+                                   <div className="p-3 bg-amber-50 text-amber-600 rounded-xl shrink-0">
                                        <AlertCircle size={24} />
                                    </div>
                                    <div>
-                                       <p className="font-bold text-slate-800 text-sm mb-1">{a.type === 'ANOMALY' ? 'Anomalía Detectada' : 'Advertencia'}</p>
-                                       <p className="text-slate-600 text-sm">{a.message}</p>
+                                       <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">{a.type === 'ANOMALY' ? 'Gasto Inusual' : 'Sugerencia'}</p>
+                                       <p className="text-slate-700 text-sm font-bold leading-relaxed">{a.message}</p>
+                                       <p className="text-[10px] text-slate-400 mt-2 font-medium">{new Date(a.date).toLocaleDateString()}</p>
                                    </div>
                                </div>
                            ))
