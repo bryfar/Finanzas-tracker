@@ -31,48 +31,48 @@ const TransactionList: React.FC<TransactionListProps> = ({ transactions, onDelet
   }, {} as Record<string, Transaction[]>);
 
   if (sortedTransactions.length === 0) return (
-      <Card className="p-12 text-center text-slate-400 flex flex-col items-center">
-          <Mascot variant="sad" size={100} className="mb-4 opacity-40 grayscale" />
-          <p className="font-heading font-black text-slate-600 uppercase tracking-widest text-[10px]">Sin actividad reciente</p>
-      </Card>
+      <div className="p-12 text-center text-slate-400 flex flex-col items-center bg-white rounded-[2.5rem] border border-slate-100">
+          <Mascot variant="sad" size={120} className="mb-6 opacity-30 grayscale" />
+          <p className="font-heading font-black text-slate-600 uppercase tracking-[0.2em] text-[10px]">Sin actividad aún</p>
+      </div>
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between px-1">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between px-2">
           <h3 className="font-heading font-black text-xl text-slate-900">Actividad</h3>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full">{transactions.length} regs</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-1.5 rounded-full">{transactions.length} registros</span>
       </div>
       
       {(Object.entries(grouped) as [string, Transaction[]][]).map(([dateLabel, txs]) => (
-        <div key={dateLabel} className="space-y-3">
-          <div className="flex items-center gap-3">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">{dateLabel}</span>
+        <div key={dateLabel} className="space-y-4">
+          <div className="flex items-center gap-4">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">{dateLabel}</span>
              <div className="h-px w-full bg-slate-100"></div>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             {txs.map((tx) => (
-              <div key={tx.id} className="bg-white p-3.5 rounded-[1.5rem] border border-slate-100 flex items-center gap-4 active:scale-[0.98] transition-transform group">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${getCategoryStyle(tx.category)}`}>
+              <div key={tx.id} className="bg-white p-4 rounded-[1.8rem] border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all group relative overflow-hidden">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${getCategoryStyle(tx.category)}`}>
                   {getCategoryIcon(tx.category)}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">{tx.description || tx.category}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{tx.category}</p>
+                    <p className="font-bold text-slate-800 text-sm truncate pr-4">{tx.description || tx.category}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{tx.category}</p>
                 </div>
                 <div className="text-right flex items-center gap-4">
                   <div>
-                    <p className={`font-heading font-black text-sm whitespace-nowrap ${tx.type === TransactionType.INCOME ? 'text-emerald-600' : 'text-slate-900'}`}>
+                    <p className={`font-heading font-black text-base whitespace-nowrap ${tx.type === TransactionType.INCOME ? 'text-emerald-600' : 'text-slate-900'}`}>
                         {tx.type === TransactionType.INCOME ? '+' : '-'} S/. {tx.amount.toFixed(0)}
                     </p>
-                    {tx.isFixed && <span className="text-[8px] font-black bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded uppercase">Fijo</span>}
+                    {tx.isFixed && <span className="text-[8px] font-black bg-brand-50 text-brand-600 px-2 py-0.5 rounded-md uppercase float-right mt-1">Fijo</span>}
                   </div>
                   <button 
                     onClick={() => onDelete(tx.id)} 
-                    className="p-2 text-slate-300 hover:text-rose-500 active:text-rose-600 transition-colors"
+                    className="p-3 text-slate-200 hover:text-rose-500 active:text-rose-600 transition-colors"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
