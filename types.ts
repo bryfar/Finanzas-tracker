@@ -31,6 +31,17 @@ export interface Account {
   icon?: string;
 }
 
+export interface Investment {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'EMERGENCY_FUND' | 'FIXED_TERM' | 'STOCKS' | 'CRYPTO' | 'SAVINGS';
+  amount: number;
+  interestRate: number; // Tasa Anual
+  institution: string;
+  startDate?: string;
+}
+
 export interface Goal {
   id: string;
   name: string;
@@ -84,21 +95,8 @@ export interface StrategyBucket {
   categories: Category[];
 }
 
-export interface Asset {
-  id: string;
-  name: string;
-  value: number;
-  type: 'ASSET' | 'LIABILITY'; 
-  category: 'REAL_ESTATE' | 'VEHICLE' | 'INVESTMENT' | 'DEBT' | 'OTHER';
-}
-
 export type AIPersonality = 'STRICT' | 'MOTIVATOR' | 'SARCASTIC';
 export type RiskProfile = 'CONSERVATIVE' | 'MODERATE' | 'RISKY';
-
-export interface AIConfig {
-  personality: AIPersonality;
-  riskProfile: RiskProfile;
-}
 
 export interface UserMetadata {
   full_name?: string;
@@ -107,6 +105,7 @@ export interface UserMetadata {
   quick_save_amount?: number;
 }
 
+// Fixed: Added missing EducationTip interface for education view and AI service
 export interface EducationTip {
   id: string;
   title: string;
@@ -115,6 +114,7 @@ export interface EducationTip {
   readTime: string; 
 }
 
+// Fixed: Added missing AIInsight interface for anomaly detection
 export interface AIInsight {
   id: string;
   type: 'ANOMALY' | 'TIP' | 'WARNING';
@@ -122,6 +122,7 @@ export interface AIInsight {
   date: string;
 }
 
+// Fixed: Added missing ChatMessage interface for the AI Advisor chat UI
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';

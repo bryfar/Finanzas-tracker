@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal } from "../types";
+import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal, Investment } from "../types";
 
 // Modelo recomendado para tareas de texto
 const modelId = "gemini-3-flash-preview";
@@ -13,9 +13,9 @@ export const chatWithFinancialAdvisor = async (
   personality: AIPersonality = 'MOTIVATOR'
 ): Promise<string> => {
   try {
-    // Inicialización obligatoria dentro de la función para usar la API Key del entorno
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
+    // Obtener también contexto de inversiones si es posible (pasado desde la app)
     const dataContext = JSON.stringify(contextData.slice(0, 30));
     
     let toneInstruction = "Profesional pero motivador.";
@@ -32,7 +32,8 @@ export const chatWithFinancialAdvisor = async (
       - Datos recientes: ${dataContext}.
       
       OBJETIVO:
-      Proporciona consejos financieros personalizados. Usa Markdown para dar formato.
+      Proporciona consejos financieros personalizados. Si el usuario pregunta por sus ahorros o inversiones, analiza si su Categoría Millonaria (Futuro) está rindiendo bien (tasas > 5% son buenas en el mercado actual). 
+      Usa Markdown para dar formato.
     `;
 
     const chatHistory = history.map(h => ({

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, KeyRound, Loader2, Save } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, KeyRound, Loader2, Save, ShieldCheck } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -45,8 +45,18 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  const resetAppState = () => {
+    setTransactions([]);
+    setAccounts([]);
+    setGoals([]);
+    setSubscriptions([]);
+    setStreak(0);
+    setSummary({ totalIncome: 0, totalExpense: 0, balance: 0, savingsRate: 0, fixedExpenses: 0, variableExpenses: 0, projectedBalance: 0 });
+    setDailySnaps([]);
+    setActiveView('dashboard');
+  };
+
   useEffect(() => {
-    // Detectar si venimos de un enlace de recuperación
     if (window.location.hash.includes('access_token') || window.location.search.includes('type=recovery')) {
         setIsRecovery(true);
     }
@@ -69,18 +79,19 @@ function App() {
     checkAuth();
 
     const { data } = authService.onAuthStateChange((event, s) => { 
-        setSession(s);
-        if (event === 'PASSWORD_RECOVERY') {
+        if (event === 'SIGNED_OUT') {
+            const oldUserId = session?.user?.id;
+            if (oldUserId) transactionService.clearLocalCache(oldUserId);
+            resetAppState();
+            setSession(null);
+        } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            setSession(s);
+        } else if (event === 'PASSWORD_RECOVERY') {
             setIsRecovery(true);
-        }
-        if(!s) { 
-            setTransactions([]); 
-            setIsInitializing(false); 
-            setIsSyncing(false); 
         }
     });
     return () => data.subscription.unsubscribe();
-  }, []);
+  }, [session?.user?.id]);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +100,7 @@ function App() {
         await authService.updatePassword(newPassword);
         addNotification('success', 'Contraseña actualizada correctamente');
         setIsRecovery(false);
-        window.location.hash = ''; // Limpiar URL
+        window.location.hash = ''; 
         window.location.search = '';
     } catch (err: any) {
         addNotification('error', err.message || 'Error al actualizar contraseña');
@@ -103,7 +114,7 @@ function App() {
           setIsSyncing(true);
           loadAllData(session.user.id);
       } 
-  }, [session, isRecovery]);
+  }, [session?.user?.id, isRecovery]);
 
   const loadAllData = async (userId: string) => {
     try {
@@ -113,12 +124,15 @@ function App() {
           transactionService.getGoals(userId),
           transactionService.getSubscriptions(userId)
       ]);
+      
       setTransactions(txs || []); 
       setAccounts(accs || []); 
       setGoals(gls || []); 
       setSubscriptions(subs || []);
-      setStreak(calculateStreak(txs || []));
-      setDailySnaps(generateDailySnaps(gls || [], calculateStreak(txs || [])));
+      
+      const calcStreak = calculateStreak(txs || []);
+      setStreak(calcStreak);
+      setDailySnaps(generateDailySnaps(gls || [], calcStreak));
     } catch (e) { 
         console.error("Sync error:", e);
         addNotification('error', 'Error al conectar con la base de datos'); 
@@ -177,6 +191,16 @@ function App() {
     });
   }, [transactions, accounts]);
 
+  const handleLogout = async () => {
+    try {
+        await authService.signOut();
+    } catch (e) {
+        console.error("Logout error", e);
+        resetAppState();
+        setSession(null);
+    }
+  };
+
   if (isRecovery) return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-slate-100">
@@ -206,7 +230,7 @@ function App() {
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
           <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">Conectando...</h2>
-          <p className="text-slate-500 font-medium animate-pulse">Sincronizando con Supabase</p>
+          <p className="text-slate-500 font-medium animate-pulse">Sincronizando tus datos privados</p>
       </div>
   );
 
@@ -253,6 +277,12 @@ function App() {
                         </button>
                     ))}
                  </nav>
+                 <div className="mt-auto px-2 pb-2">
+                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                        <ShieldCheck size={14} className="text-emerald-500" />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Privacidad Activa</span>
+                    </div>
+                 </div>
             </div>
         </aside>
 
@@ -311,11 +341,11 @@ function App() {
                             </div>
                         </div>
                     )}
-                    {activeView === 'analysis' && <AnalysisView transactions={transactions} subscriptions={subscriptions} />}
+                    {activeView === 'analysis' && <AnalysisView transactions={transactions} subscriptions={subscriptions} userId={session.user.id} />}
                     {activeView === 'assets' && <AssetsView accounts={accounts} />}
                     {activeView === 'goals' && <GoalsSection goals={goals} onAddGoal={async (g) => { await transactionService.addGoal(session.user.id, g); loadAllData(session.user.id); }} onUpdateGoal={async (id, a) => { await transactionService.updateGoalAmount(session.user.id, id, a); loadAllData(session.user.id); }} />}
                     {activeView === 'education' && <EducationView transactions={transactions} />}
-                    {activeView === 'settings' && <SettingsView userEmail={session.user.email} userName={displayName} streak={streak} onLogout={() => authService.signOut()} onToggleSound={() => {}} onUpdateName={loadAllData} />}
+                    {activeView === 'settings' && <SettingsView userEmail={session.user.email} userName={displayName} streak={streak} onLogout={handleLogout} onToggleSound={() => {}} onUpdateName={() => loadAllData(session.user.id)} />}
                  </div>
              </div>
         </main>

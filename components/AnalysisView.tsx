@@ -11,9 +11,10 @@ import Mascot from './Mascot';
 interface AnalysisViewProps {
   transactions: Transaction[];
   subscriptions: Subscription[];
+  userId: string;
 }
 
-const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions }) => {
+const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions, userId }) => {
   const [view, setView] = useState<'CALENDAR' | 'REPORT' | 'STRATEGY' | 'INSIGHTS'>('STRATEGY');
   const [anomalies, setAnomalies] = useState<any[]>([]);
 
@@ -43,7 +44,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions
        </div>
 
        <div className="flex-1 min-h-0">
-           {view === 'STRATEGY' && <SavingsStrategy transactions={transactions} />}
+           {view === 'STRATEGY' && <SavingsStrategy transactions={transactions} userId={userId} />}
            {view === 'CALENDAR' && <FinancialCalendar transactions={transactions} subscriptions={subscriptions} />}
            {view === 'REPORT' && (
                <div className="h-[600px]">
