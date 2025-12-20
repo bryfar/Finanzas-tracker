@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Heart, ChevronDown, ChevronUp, Zap, Sparkles, Flame } from 'lucide-react';
 import { Snap, UserMetadata } from '../types';
@@ -18,7 +19,6 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
   const [processing, setProcessing] = useState(false);
   const [lastTap, setLastTap] = useState(0);
 
-  // Swipe Handlers (Simple implementation)
   const handleScroll = (e: React.WheelEvent) => {
       if (e.deltaY > 50 && activeIndex < snaps.length - 1) setActiveIndex(prev => prev + 1);
       if (e.deltaY < -50 && activeIndex > 0) setActiveIndex(prev => prev - 1);
@@ -29,7 +29,6 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
       const DOUBLE_TAP_DELAY = 300;
       
       if (now - lastTap < DOUBLE_TAP_DELAY && snap.type === 'GOAL_PROMO' && snap.content.goalId && !processing) {
-          // Double Tap Triggered
           setShowHeart(true);
           setProcessing(true);
           setTimeout(() => setShowHeart(false), 1000);
@@ -37,11 +36,6 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
           try {
               const amount = userMetadata?.quick_save_amount || 5;
               await transactionService.quickSave(userId, snap.content.goalId, amount);
-              
-              // Success Feedback
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'); // Coin sound
-              audio.volume = 0.5;
-              audio.play().catch(() => {});
               onRefreshData();
           } catch (e) {
               console.error(e);
@@ -58,7 +52,6 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
     <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center animate-fade-in" onWheel={handleScroll}>
         <div className="w-full max-w-md h-[100dvh] md:h-[90vh] md:rounded-[2.5rem] relative bg-slate-900 overflow-hidden shadow-2xl">
             
-            {/* Background Image */}
             <div className="absolute inset-0 opacity-60">
                 <img 
                     src={currentSnap?.content.mediaUrl || "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop"} 
@@ -68,12 +61,10 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/40"></div>
 
-            {/* Close Button */}
             <button onClick={onClose} className="absolute top-6 right-6 z-20 text-white/80 hover:text-white bg-black/20 p-2 rounded-full backdrop-blur-md">
                 <X size={24} />
             </button>
 
-            {/* Content Content */}
             <div 
                 className="absolute inset-0 z-10 flex flex-col justify-end p-8 pb-16 md:pb-8"
                 onClick={() => handleDoubleTap(currentSnap)}
@@ -110,7 +101,6 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
                  </div>
             </div>
 
-            {/* Navigation Dots */}
             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
                 {snaps.map((_, idx) => (
                     <div 
@@ -121,14 +111,12 @@ const FinnySnaps: React.FC<FinnySnapsProps> = ({ snaps, onClose, userId, userMet
                 ))}
             </div>
 
-            {/* Swipe Indicators */}
             {activeIndex < snaps.length - 1 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 animate-bounce text-white/50">
                     <ChevronUp size={32} />
                 </div>
             )}
 
-            {/* Success Animation Overlay (Hearts/Coins) */}
             {showHeart && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
                     <Heart size={150} className="text-rose-500 animate-pop-in drop-shadow-2xl" fill="currentColor" />

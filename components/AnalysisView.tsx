@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { Calendar, BarChart2, AlertCircle, Zap } from 'lucide-react';
+import { Calendar, BarChart2, AlertCircle, Zap, Target } from 'lucide-react';
 import { Transaction, Subscription } from '../types';
 import FinancialCalendar from './FinancialCalendar';
 import FinancialChart from './FinancialChart';
+import SavingsStrategy from './SavingsStrategy';
 import { detectAnomalies } from '../services/geminiService';
 import Mascot from './Mascot';
 
@@ -12,7 +14,7 @@ interface AnalysisViewProps {
 }
 
 const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions }) => {
-  const [view, setView] = useState<'CALENDAR' | 'REPORT' | 'INSIGHTS'>('CALENDAR');
+  const [view, setView] = useState<'CALENDAR' | 'REPORT' | 'STRATEGY' | 'INSIGHTS'>('STRATEGY');
   const [anomalies, setAnomalies] = useState<any[]>([]);
 
   useEffect(() => {
@@ -23,8 +25,9 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-       <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
+       <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-fit overflow-x-auto max-w-full">
            {[
+               { id: 'STRATEGY', icon: Target, label: 'Estrategia 50/20/30' },
                { id: 'CALENDAR', icon: Calendar, label: 'Calendario' },
                { id: 'REPORT', icon: BarChart2, label: 'Reporte' },
                { id: 'INSIGHTS', icon: Zap, label: 'Insights IA' },
@@ -32,7 +35,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions
                <button
                   key={item.id}
                   onClick={() => setView(item.id as any)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${view === item.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all whitespace-nowrap ${view === item.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                >
                    <item.icon size={16} /> {item.label}
                </button>
@@ -40,6 +43,7 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ transactions, subscriptions
        </div>
 
        <div className="flex-1 min-h-0">
+           {view === 'STRATEGY' && <SavingsStrategy transactions={transactions} />}
            {view === 'CALENDAR' && <FinancialCalendar transactions={transactions} subscriptions={subscriptions} />}
            {view === 'REPORT' && (
                <div className="h-[600px]">

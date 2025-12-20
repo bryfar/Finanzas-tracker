@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, Camera, AlertTriangle } from 'lucide-react';
 import { Transaction, TransactionType, Category, Account } from '../types';
@@ -35,7 +36,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, use
       }
   }, [userId, isOpen]);
 
-  // Real-time Duplicate Check
   useEffect(() => {
       if (amount && description) {
           const check = async () => {
@@ -49,7 +49,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, use
 
   const handleOCR = () => {
       setScanning(true);
-      // Simulate OCR Delay & Processing
       setTimeout(() => {
           setAmount('45.50');
           setDescription('Supermercado Metro');
@@ -73,11 +72,6 @@ const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransaction, use
     } else {
        finalDesc = description || category;
     }
-
-    // Play Coin Sound (Simulated)
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
 
     onAddTransaction({
       amount: parseFloat(amount),

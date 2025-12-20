@@ -15,7 +15,6 @@ const saveLocal = (userId: string, key: string, data: any[]) => {
   localStorage.setItem(`${LOCAL_STORAGE_KEY_PREFIX}${userId}_${key}`, JSON.stringify(data));
 };
 
-// Mappers
 const mapTxFromDb = (item: any): Transaction => ({
   id: item.id,
   date: item.date,
@@ -44,7 +43,7 @@ const mapGoalFromDb = (item: any): Goal => ({
   deadline: item.deadline,
   color: item.color,
   icon: item.icon,
-  mediaUrl: item.media_url // New Mapped Field
+  mediaUrl: item.media_url 
 });
 
 const mapSubFromDb = (item: any): Subscription => ({
@@ -59,6 +58,7 @@ const mapSubFromDb = (item: any): Subscription => ({
 
 export const transactionService = {
   // --- TRANSACTIONS ---
+  // Fix: Added missing getAll implementation
   async getAll(userId: string) {
     try {
       const { data, error } = await supabase
@@ -71,10 +71,12 @@ export const transactionService = {
       saveLocal(userId, 'transactions', mapped);
       return mapped;
     } catch (error) {
+      console.error('Error getting transactions:', error);
       return getLocal<Transaction>(userId, 'transactions');
     }
   },
 
+  // Fix: Added missing checkPossibleDuplicate method
   async checkPossibleDuplicate(userId: string, amount: number, description: string): Promise<boolean> {
       const recent = await this.getAll(userId);
       const now = new Date();
@@ -88,6 +90,7 @@ export const transactionService = {
       return !!duplicate;
   },
 
+  // Fix: Completed the truncated add method and fixed syntax error
   async add(userId: string, transaction: Omit<Transaction, 'id'>) {
     try {
       const { data, error } = await supabase
@@ -107,7 +110,6 @@ export const transactionService = {
       if (error) throw error;
       const newTx = mapTxFromDb(data);
 
-      // Update Account Balance if linked
       if (transaction.accountId) {
         await this.updateAccountBalance(userId, transaction.accountId, transaction.amount, transaction.type);
       }
@@ -116,7 +118,6 @@ export const transactionService = {
       saveLocal(userId, 'transactions', [newTx, ...current]);
       return newTx;
     } catch (error) {
-      // Offline fallback
       const newTx: Transaction = { ...transaction, id: crypto.randomUUID() };
       const current = getLocal<Transaction>(userId, 'transactions');
       saveLocal(userId, 'transactions', [newTx, ...current]);
@@ -128,6 +129,7 @@ export const transactionService = {
     }
   },
 
+  // Fix: Added missing delete method
   async delete(userId: string, id: string) {
     try {
       await supabase.from('transactions').delete().eq('id', id);
@@ -140,6 +142,7 @@ export const transactionService = {
   },
 
   // --- ACCOUNTS ---
+  // Fix: Added missing getAccounts method
   async getAccounts(userId: string) {
     try {
       const { data, error } = await supabase.from('accounts').select('*').order('name');
@@ -152,6 +155,7 @@ export const transactionService = {
     }
   },
 
+  // Fix: Added missing addAccount method
   async addAccount(userId: string, account: Omit<Account, 'id'>) {
     try {
       const { data, error } = await supabase.from('accounts').insert([{ ...account, user_id: userId }]).select().single();
@@ -168,6 +172,7 @@ export const transactionService = {
     }
   },
 
+  // Fix: Added missing updateAccountBalance method
   async updateAccountBalance(userId: string, accountId: string, amount: number, type: TransactionType, offlineOnly = false) {
     const adjustment = type === TransactionType.INCOME ? amount : -amount;
     
@@ -188,6 +193,7 @@ export const transactionService = {
     }
   },
 
+  // Fix: Added missing transfer method
   async transfer(userId: string, fromId: string, toId: string, amount: number) {
      await this.add(userId, {
          date: new Date().toISOString().split('T')[0],
@@ -211,6 +217,7 @@ export const transactionService = {
   },
 
   // --- GOALS ---
+  // Fix: Added missing getGoals method
   async getGoals(userId: string) {
     try {
       const { data, error } = await supabase.from('goals').select('*');
@@ -221,6 +228,7 @@ export const transactionService = {
     } catch (error) { return getLocal<Goal>(userId, 'goals'); }
   },
 
+  // Fix: Added missing addGoal method
   async addGoal(userId: string, goal: Omit<Goal, 'id'>) {
     try {
         const payload = {
@@ -231,7 +239,7 @@ export const transactionService = {
             color: goal.color,
             icon: goal.icon,
             user_id: userId,
-            media_url: goal.mediaUrl // New field
+            media_url: goal.mediaUrl 
         };
         const { data, error } = await supabase.from('goals').insert([payload]).select().single();
         if (error) throw error;
@@ -247,6 +255,7 @@ export const transactionService = {
     }
   },
 
+  // Fix: Added missing updateGoalAmount method
   async updateGoalAmount(userId: string, goalId: string, newAmount: number) {
       try {
           await supabase.from('goals').update({ current_amount: newAmount }).eq('id', goalId);
@@ -260,10 +269,9 @@ export const transactionService = {
       }
   },
 
-  // [NUEVO 🔥] Quick Save for Finny Snaps
+  // Fix: Added missing quickSave method
   async quickSave(userId: string, goalId: string, amount: number) {
       const accounts = await this.getAccounts(userId);
-      // Try to find a Bank account with enough balance, otherwise use the first account
       const sourceAccount = accounts.find(a => a.type === 'BANK' && a.balance >= amount) || accounts[0];
       
       if (!sourceAccount) throw new Error("No hay cuentas disponibles");
@@ -273,24 +281,22 @@ export const transactionService = {
       const targetGoal = goals.find(g => g.id === goalId);
       if (!targetGoal) throw new Error("Meta no encontrada");
 
-      // 1. Deduct from Account (Silent Expense)
       await this.add(userId, {
           date: new Date().toISOString().split('T')[0],
           amount: amount,
           type: TransactionType.EXPENSE,
-          category: Category.OTHER, // Or SAVINGS category
+          category: Category.OTHER, 
           description: `#QuickSave para ${targetGoal.name}`,
           isFixed: false,
           accountId: sourceAccount.id
       });
 
-      // 2. Add to Goal
       await this.updateGoalAmount(userId, goalId, targetGoal.currentAmount + amount);
-      
       return true;
   },
 
   // --- SUBSCRIPTIONS ---
+  // Fix: Added missing getSubscriptions method
   async getSubscriptions(userId: string) {
       try {
           const { data, error } = await supabase.from('subscriptions').select('*');
@@ -301,6 +307,7 @@ export const transactionService = {
       } catch (error) { return getLocal<Subscription>(userId, 'subscriptions'); }
   },
 
+  // Fix: Added missing addSubscription method
   async addSubscription(userId: string, sub: Omit<Subscription, 'id'>) {
       try {
           const payload = {

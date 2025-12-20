@@ -1,3 +1,4 @@
+
 import { supabase } from './supabaseClient';
 
 export const authService = {
@@ -30,12 +31,16 @@ export const authService = {
   },
 
   async getSession() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return data.session;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return data.session;
+    } catch (error) {
+      console.error('Get session error:', error);
+      return null;
+    }
   },
   
-  // Force a session refresh from the server to get latest metadata
   async refreshSession() {
     const { data, error } = await supabase.auth.refreshSession();
     if (error) throw error;

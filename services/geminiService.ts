@@ -2,9 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal } from "../types";
 
-// We define a helper to get a fresh instance of the AI client using the current environment key
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// Use gemini-3-flash-preview for general tasks
 const modelId = "gemini-3-flash-preview";
 
 export const chatWithFinancialAdvisor = async (
@@ -15,7 +13,9 @@ export const chatWithFinancialAdvisor = async (
   personality: AIPersonality = 'MOTIVATOR'
 ): Promise<string> => {
   try {
-    const ai = getAI();
+    // Initializing right before use as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const dataContext = JSON.stringify(contextData.slice(0, 30));
     
     let toneInstruction = "Profesional pero motivador.";
@@ -27,12 +27,17 @@ export const chatWithFinancialAdvisor = async (
       
       PERSONALIDAD SELECCIONADA: ${toneInstruction}
       
+      ESTRATEGIA RECOMENDADA: Regla 50/20/30.
+      - 50% para Esenciales (Vivienda, Servicios, Transporte, Alimentación, Salud, Deudas).
+      - 20% para Estilo de Vida (Entretenimiento, Compras, Otros).
+      - 30% para Futuro / Categoría Millonaria (Fondo de emergencia, Plazo fijo, Inversión a largo plazo).
+      
       CONTEXTO DEL USUARIO:
       - Racha de uso: ${streak} días.
       - Transacciones recientes: ${dataContext}.
       
       OBJETIVO:
-      Proporciona consejos financieros personalizados basados en los datos. Usa Markdown para dar formato.
+      Proporciona consejos financieros personalizados basados en los datos. Enfócate especialmente en ayudar al usuario a cumplir la regla 50/20/30. Usa Markdown para dar formato.
     `;
 
     const chatHistory = history.map(h => ({
@@ -50,10 +55,9 @@ export const chatWithFinancialAdvisor = async (
       message: currentMessage
     });
 
-    // Directly access .text property
     return response.text || "Lo siento, no pude procesar esa consulta.";
   } catch (error) {
-    console.error("Chat error:", error);
+    console.error("Gemini Chat error:", error);
     return "Tuve un pequeño problema técnico analizando tus finanzas. ¿Podrías intentar de nuevo?";
   }
 };
@@ -91,9 +95,9 @@ export const detectAnomalies = (transactions: Transaction[]): AIInsight[] => {
 
 export const generateEducationTips = (transactions: Transaction[]): EducationTip[] => {
     const tips: EducationTip[] = [
-        { id: '1', title: 'Regla 50/30/20', content: 'Divide tus ingresos: 50% necesidades, 30% deseos, 20% ahorros e inversión.', category: 'Presupuesto', readTime: '2 min' },
-        { id: '2', title: 'Fondo de Emergencia', content: 'Lo ideal es tener de 3 a 6 meses de tus gastos fijos cubiertos para imprevistos.', category: 'Ahorro', readTime: '1 min' },
-        { id: '3', title: 'El Interés Compuesto', content: 'Es la fuerza más poderosa del universo financiero. Empieza a invertir hoy mismo.', category: 'Inversión', readTime: '3 min' },
+        { id: '1', title: 'Regla 50/20/30', content: 'Divide tus ingresos: 50% necesidades, 20% deseos, 30% categoría millonaria (emergencia, plazos fijos e inversión).', category: 'Estrategia', readTime: '2 min' },
+        { id: '2', title: 'Fondo de Emergencia', content: 'Tu prioridad en el 30% del futuro. Debe cubrir de 3 a 6 meses de tus gastos fijos.', category: 'Ahorro', readTime: '1 min' },
+        { id: '3', title: 'Inversión vs Ahorro', content: 'Ahorrar es guardar, invertir es poner a trabajar. Tu 30% debe buscar rentabilidad.', category: 'Inversión', readTime: '3 min' },
     ];
     
     return tips;
@@ -120,7 +124,7 @@ export const generateDailySnaps = (goals: Goal[], streak: number): Snap[] => {
             content: {
                 title: goal.name,
                 subtitle: `Estás al ${((goal.currentAmount/goal.targetAmount)*100).toFixed(0)}% de tu meta. ¡Un esfuerzo más!`,
-                mediaUrl: goal.mediaUrl || `https://source.unsplash.com/random/800x1600/?savings,money`,
+                mediaUrl: goal.mediaUrl || `https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop`,
                 goalId: goal.id,
                 actionLabel: 'Ahorro Rápido'
             }

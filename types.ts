@@ -1,3 +1,4 @@
+
 export enum TransactionType {
   INCOME = 'INCOME',
   EXPENSE = 'EXPENSE',
@@ -38,8 +39,8 @@ export interface Goal {
   deadline?: string;
   color: string;
   icon: string;
-  mediaUrl?: string; // New: Image for Stories
-  allowQuickSave?: boolean; // New: Toggle for appearing in feed
+  mediaUrl?: string; 
+  allowQuickSave?: boolean;
 }
 
 export interface Subscription {
@@ -73,7 +74,16 @@ export interface FinancialSummary {
   projectedBalance: number;
 }
 
-// AI & New Features
+export interface StrategyBucket {
+  id: 'ESSENTIALS' | 'LIFESTYLE' | 'FUTURE';
+  label: string;
+  percentage: number;
+  current: number;
+  target: number;
+  color: string;
+  categories: Category[];
+}
+
 export interface Asset {
   id: string;
   name: string;
@@ -94,7 +104,7 @@ export interface UserMetadata {
   full_name?: string;
   bio?: string;
   avatar_seed?: string;
-  quick_save_amount?: number; // New: Default double tap amount
+  quick_save_amount?: number;
 }
 
 export interface EducationTip {
@@ -119,15 +129,14 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-// Finny Snaps (TikTok Mode)
 export interface Snap {
   id: string;
   type: 'GOAL_PROMO' | 'TIP' | 'QUIZ' | 'STREAK_SUMMARY';
   content: {
     title: string;
     subtitle: string;
-    mediaUrl?: string; // Background Image/Video
-    goalId?: string; // If it's a quick save snap
+    mediaUrl?: string;
+    goalId?: string;
     actionLabel?: string;
   };
 }
