@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, KeyRound, Loader2, Save, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, ShieldCheck } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -25,10 +25,6 @@ import { generateDailySnaps } from './services/geminiService';
 
 function App() {
   const [session, setSession] = useState<any>(null);
-  const [isRecovery, setIsRecovery] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [recoveryLoading, setRecoveryLoading] = useState(false);
-  
   const [activeView, setActiveView] = useState<'dashboard' | 'analysis' | 'assets' | 'goals' | 'education' | 'settings'>('dashboard');
   const [showTxModal, setShowTxModal] = useState(false);
   const [showSnaps, setShowSnaps] = useState(false); 
@@ -45,52 +41,28 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
 
-  const resetAppState = () => {
-    setTransactions([]);
-    setAccounts([]);
-    setGoals([]);
-    setSubscriptions([]);
-    setStreak(0);
-    setSummary({ totalIncome: 0, totalExpense: 0, balance: 0, savingsRate: 0, fixedExpenses: 0, variableExpenses: 0, projectedBalance: 0 });
-    setDailySnaps([]);
-    setActiveView('dashboard');
-  };
-
   useEffect(() => {
-    const checkAuth = async () => {
-        try {
-            const s = await authService.getSession();
-            setSession(s);
-            if (!s) {
-                setIsInitializing(false);
-                setIsSyncing(false);
-            }
-        } catch (e) {
-            setIsInitializing(false);
-            setIsSyncing(false);
-        }
-    };
-    checkAuth();
-
-    const { data } = authService.onAuthStateChange((event, s) => { 
-        if (event === 'SIGNED_OUT') {
-            const oldUserId = session?.user?.id;
-            if (oldUserId) transactionService.clearLocalCache(oldUserId);
-            resetAppState();
-            setSession(null);
-        } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-            setSession(s);
+    authService.getSession().then((s) => { 
+        setSession(s); 
+        if (!s) { setIsInitializing(false); setIsSyncing(false); }
+    });
+    const { data } = authService.onAuthStateChange((_, s) => { 
+        setSession(s); 
+        if(!s) { 
+            setTransactions([]); 
+            setIsInitializing(false); 
+            setIsSyncing(false); 
         }
     });
     return () => data.subscription.unsubscribe();
-  }, [session?.user?.id]);
+  }, []);
 
   useEffect(() => { 
-      if (session?.user?.id && !isRecovery) {
+      if (session?.user?.id) {
           setIsSyncing(true);
           loadAllData(session.user.id);
       } 
-  }, [session?.user?.id, isRecovery]);
+  }, [session]);
 
   const loadAllData = async (userId: string) => {
     try {
@@ -100,25 +72,19 @@ function App() {
           transactionService.getGoals(userId),
           transactionService.getSubscriptions(userId)
       ]);
-      
-      setTransactions(txs || []); 
-      setAccounts(accs || []); 
-      setGoals(gls || []); 
-      setSubscriptions(subs || []);
-      
+      setTransactions(txs || []); setAccounts(accs || []); setGoals(gls || []); setSubscriptions(subs || []);
       const calcStreak = calculateStreak(txs || []);
       setStreak(calcStreak);
       setDailySnaps(generateDailySnaps(gls || [], calcStreak));
-    } catch (e) { 
-        addNotification('error', 'Error al sincronizar datos'); 
-    } finally { 
+    } catch (e) { addNotification('error', 'Error de sincronización'); } 
+    finally { 
         setIsSyncing(false); 
         setIsInitializing(false);
     }
   };
 
   const calculateStreak = (txs: Transaction[]) => {
-      if (!txs || txs.length === 0) return 0;
+      if (txs.length === 0) return 0;
       const uniqueDates = Array.from(new Set(txs.map(t => t.date))).sort().reverse();
       const today = new Date().toISOString().split('T')[0];
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -160,33 +126,28 @@ function App() {
       setNotifications(prev => [...prev, { id: Date.now().toString(), type, message }]);
   };
 
-  const handleLogout = async () => {
-    await authService.signOut();
-  };
-
   if (!session && !isInitializing) return <Auth />;
   
   if (isSyncing || isInitializing) return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
-          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2 text-center px-4">Preparando tu Espacio...</h2>
-          <p className="text-slate-500 font-medium animate-pulse">Cada usuario tiene su propio universo de datos</p>
+          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">Sincronizando...</h2>
+          <p className="text-slate-500 font-medium animate-pulse">Finny está organizando tus cuentas</p>
       </div>
   );
 
   const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   const avatarSeed = session.user.user_metadata?.avatar_seed || session.user.email;
-  const isNewUser = accounts.length === 0;
 
   return (
     <div className="min-h-[100dvh] bg-surface font-sans text-slate-800 flex overflow-hidden">
         <NotificationToast notifications={notifications} removeNotification={(id) => setNotifications(p => p.filter(n => n.id !== id))} />
-        <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={async (tx) => { await transactionService.add(session.user.id, tx); loadAllData(session.user.id); addNotification('success', 'Movimiento registrado'); }} />
+        <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={async (tx) => { await transactionService.add(session.user.id, tx); loadAllData(session.user.id); addNotification('success', 'Movimiento guardado'); }} />
         
         {showSnaps && <FinnySnaps snaps={dailySnaps} onClose={() => setShowSnaps(false)} userId={session.user.id} userMetadata={session.user.user_metadata} onRefreshData={() => loadAllData(session.user.id)} />}
 
         <aside className="hidden lg:flex flex-col w-72 p-4 h-screen sticky top-0 z-40">
-            <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6 overflow-hidden">
+            <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6">
                  <div className="flex items-center gap-3 mb-8">
                     <Mascot variant="idle" size={48} />
                     <span className="font-heading font-black text-xl text-slate-900 tracking-tight">Finanzas<span className="text-brand-500">AI</span></span>
@@ -195,7 +156,7 @@ function App() {
                     {[
                         { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
                         { id: 'analysis', icon: BarChart3, label: 'Análisis' },
-                        { id: 'assets', icon: Wallet, label: 'Patrimonio' },
+                        { id: 'assets', icon: Wallet, label: 'Inversiones' },
                         { id: 'goals', icon: Target, label: 'Metas' },
                         { id: 'education', icon: BookOpen, label: 'Educación' },
                         { id: 'settings', icon: Settings, label: 'Ajustes' },
@@ -205,89 +166,40 @@ function App() {
                         </button>
                     ))}
                  </nav>
-                 <div className="mt-auto px-2 pb-2">
-                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                        <ShieldCheck size={14} className="text-emerald-500" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Privacidad Activa</span>
-                    </div>
-                 </div>
             </div>
         </aside>
 
         <main className="flex-1 h-[100dvh] overflow-y-auto custom-scrollbar relative bg-surface">
              <div className="p-4 lg:p-8 max-w-[1400px] mx-auto pb-48 lg:pb-12">
-                 <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-2xl font-heading font-black text-slate-900">
-                          {activeView === 'dashboard' ? 'Panel Principal' : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
-                        </h1>
-                        <p className="text-xs text-slate-500 font-medium">Hola, {displayName.split(' ')[0]}</p>
-                    </div>
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('settings')}>
-                        <div className="text-right hidden sm:block">
-                            <p className="font-bold text-xs group-hover:text-brand-600 transition-colors">{displayName}</p>
-                            <p className="text-[10px] text-slate-400">S/. {summary.balance.toLocaleString()}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-100 overflow-hidden group-hover:shadow-md transition-all">
-                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" />
-                        </div>
-                    </div>
-                 </header>
-
                  <div className="space-y-6">
                     {activeView === 'dashboard' && (
                         <div className="space-y-6">
-                            {isNewUser ? (
-                                <div className="bg-white rounded-[2.5rem] p-12 text-center border-2 border-dashed border-slate-200 animate-fade-in">
-                                     <Mascot variant="celebrating" size={120} className="mx-auto mb-6" />
-                                     <h2 className="text-3xl font-heading font-black text-slate-900 mb-2">¡Bienvenido, {displayName.split(' ')[0]}!</h2>
-                                     <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">Este es tu espacio financiero personal. Está vacío porque acabas de empezar. ¿Qué tal si registramos tu primera cuenta?</p>
-                                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                         <button onClick={() => setShowTxModal(true)} className="btn-primary py-4 px-8 text-lg">
-                                             <Plus size={24} /> Primer Movimiento
-                                         </button>
-                                         <button onClick={() => setActiveView('settings')} className="bg-slate-100 text-slate-600 font-bold py-4 px-8 rounded-2xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                                             Configurar Perfil <ArrowRight size={20} />
-                                         </button>
-                                     </div>
+                            <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
+                            <AccountsWidget accounts={accounts} onAddAccount={async (a) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f,t,a) => { await transactionService.transfer(session.user.id, f, t, a); loadAllData(session.user.id); }} />
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                                <div className="xl:col-span-8 space-y-6">
+                                    <FinancialChart transactions={transactions} />
+                                    <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
+                                    <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); }} />
                                 </div>
-                            ) : (
-                                <>
-                                    <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
-                                    <AccountsWidget accounts={accounts} onAddAccount={async (a) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f,t,a) => { await transactionService.transfer(session.user.id, f, t, a); loadAllData(session.user.id); }} />
-                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                                        <div className="xl:col-span-8 space-y-6">
-                                            <FinancialChart transactions={transactions} />
-                                            <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
-                                            <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); }} />
-                                        </div>
-                                        <div className="xl:col-span-4 space-y-6 sticky top-24">
-                                            <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
-                                                const diff = val - summary.balance;
-                                                if (diff !== 0) {
-                                                    await transactionService.add(session.user.id, {
-                                                        amount: Math.abs(diff),
-                                                        type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
-                                                        description: 'Ajuste Manual',
-                                                        date: new Date().toISOString().split('T')[0],
-                                                        isFixed: false,
-                                                        category: Category.OTHER
-                                                    });
-                                                    loadAllData(session.user.id);
-                                                }
-                                            }} />
-                                            <AIAdvisor transactions={transactions} streak={streak} />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                                <div className="xl:col-span-4 space-y-6 sticky top-24">
+                                    <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
+                                        const diff = val - summary.balance;
+                                        if (diff !== 0) {
+                                            await transactionService.add(session.user.id, { amount: Math.abs(diff), type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE, description: 'Ajuste Manual', date: new Date().toISOString().split('T')[0], isFixed: false, category: Category.OTHER });
+                                            loadAllData(session.user.id);
+                                        }
+                                    }} />
+                                    <AIAdvisor transactions={transactions} streak={streak} />
+                                </div>
+                            </div>
                         </div>
                     )}
                     {activeView === 'analysis' && <AnalysisView transactions={transactions} subscriptions={subscriptions} userId={session.user.id} />}
-                    {activeView === 'assets' && <AssetsView accounts={accounts} />}
+                    {activeView === 'assets' && <AssetsView accounts={accounts} userId={session.user.id} />}
                     {activeView === 'goals' && <GoalsSection goals={goals} onAddGoal={async (g) => { await transactionService.addGoal(session.user.id, g); loadAllData(session.user.id); }} onUpdateGoal={async (id, a) => { await transactionService.updateGoalAmount(session.user.id, id, a); loadAllData(session.user.id); }} />}
                     {activeView === 'education' && <EducationView transactions={transactions} />}
-                    {activeView === 'settings' && <SettingsView userEmail={session.user.email} userName={displayName} streak={streak} onLogout={handleLogout} onToggleSound={() => {}} onUpdateName={() => loadAllData(session.user.id)} />}
+                    {activeView === 'settings' && <SettingsView userEmail={session.user.email} userName={displayName} streak={streak} onLogout={() => authService.signOut()} onToggleSound={() => {}} onUpdateName={() => loadAllData(session.user.id)} />}
                  </div>
              </div>
         </main>

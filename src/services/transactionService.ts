@@ -1,5 +1,6 @@
+
 import { supabase } from './supabaseClient';
-import { Transaction, TransactionType, Category, Account, Goal, Subscription } from '../types';
+import { Transaction, TransactionType, Category, Account, Goal, Subscription, Investment } from '../types';
 
 const LOCAL_STORAGE_KEY_PREFIX = 'finanzas_ai_data_';
 
@@ -56,13 +57,79 @@ const mapSubFromDb = (item: any): Subscription => ({
   logoUrl: item.logo_url
 });
 
+const mapInvestmentFromDb = (item: any): Investment => ({
+    id: item.id,
+    userId: item.user_id,
+    name: item.name,
+    type: item.type,
+    amount: Number(item.amount),
+    interestRate: Number(item.interest_rate),
+    institution: item.institution || 'Otras',
+    startDate: item.start_date
+});
+
 export const transactionService = {
+  // --- INVESTMENTS ---
+  async getInvestments(userId: string) {
+      try {
+          const { data, error } = await supabase
+              .from('investments')
+              .select('*')
+              .eq('user_id', userId);
+          if (error) throw error;
+          const mapped = (data || []).map(mapInvestmentFromDb);
+          saveLocal(userId, 'investments', mapped);
+          return mapped;
+      } catch (e) {
+          return getLocal<Investment>(userId, 'investments');
+      }
+  },
+
+  async addInvestment(userId: string, inv: Omit<Investment, 'id' | 'userId'>) {
+      try {
+          const { data, error } = await supabase
+              .from('investments')
+              .insert([{ 
+                  name: inv.name,
+                  type: inv.type,
+                  amount: inv.amount,
+                  interest_rate: inv.interestRate,
+                  institution: inv.institution,
+                  start_date: inv.startDate,
+                  user_id: userId 
+              }])
+              .select().single();
+          if (error) throw error;
+          const newInv = mapInvestmentFromDb(data);
+          const current = getLocal<Investment>(userId, 'investments');
+          saveLocal(userId, 'investments', [...current, newInv]);
+          return newInv;
+      } catch (e) {
+          const newInv = { ...inv, id: crypto.randomUUID(), userId } as Investment;
+          const current = getLocal<Investment>(userId, 'investments');
+          saveLocal(userId, 'investments', [...current, newInv]);
+          return newInv;
+      }
+  },
+
+  async deleteInvestment(userId: string, id: string) {
+      try {
+          await supabase.from('investments').delete().eq('id', id).eq('user_id', userId);
+          const current = getLocal<Investment>(userId, 'investments');
+          saveLocal(userId, 'investments', current.filter(t => t.id !== id));
+      } catch (e) {
+          const current = getLocal<Investment>(userId, 'investments');
+          saveLocal(userId, 'investments', current.filter(t => t.id !== id));
+      }
+  },
+
   // --- TRANSACTIONS ---
   async getAll(userId: string) {
     try {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', userId)
         .order('date', { ascending: false });
       
       if (error) throw error;
@@ -74,16 +141,15 @@ export const transactionService = {
     }
   },
 
+  // Fixed: Added missing checkPossibleDuplicate method
   async checkPossibleDuplicate(userId: string, amount: number, description: string): Promise<boolean> {
       const recent = await this.getAll(userId);
-      const now = new Date();
-      
-      const duplicate = recent.find(t => {
-          return t.amount === amount && 
-                 t.description.toLowerCase() === description.toLowerCase() &&
-                 t.date === now.toISOString().split('T')[0];
-      });
-
+      const now = new Date().toISOString().split('T')[0];
+      const duplicate = recent.find(t => 
+          t.amount === amount && 
+          t.description.toLowerCase() === description.toLowerCase() && 
+          t.date === now
+      );
       return !!duplicate;
   },
 
@@ -127,7 +193,7 @@ export const transactionService = {
 
   async delete(userId: string, id: string) {
     try {
-      await supabase.from('transactions').delete().eq('id', id);
+      await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
       const current = getLocal<Transaction>(userId, 'transactions');
       saveLocal(userId, 'transactions', current.filter(t => t.id !== id));
     } catch (error) {
@@ -139,7 +205,7 @@ export const transactionService = {
   // --- ACCOUNTS ---
   async getAccounts(userId: string) {
     try {
-      const { data, error } = await supabase.from('accounts').select('*').order('name');
+      const { data, error } = await supabase.from('accounts').select('*').eq('user_id', userId).order('name');
       if (error) throw error;
       const mapped = (data || []).map(mapAccountFromDb);
       saveLocal(userId, 'accounts', mapped);
@@ -151,7 +217,14 @@ export const transactionService = {
 
   async addAccount(userId: string, account: Omit<Account, 'id'>) {
     try {
-      const { data, error } = await supabase.from('accounts').insert([{ ...account, user_id: userId }]).select().single();
+      const { data, error } = await supabase.from('accounts').insert([{ 
+          name: account.name,
+          type: account.type,
+          balance: account.balance,
+          color: account.color,
+          icon: account.icon,
+          user_id: userId 
+      }]).select().single();
       if (error) throw error;
       const newAcc = mapAccountFromDb(data);
       const current = getLocal<Account>(userId, 'accounts');
@@ -165,6 +238,7 @@ export const transactionService = {
     }
   },
 
+  // Fixed: Added updateAccountBalance
   async updateAccountBalance(userId: string, accountId: string, amount: number, type: TransactionType, offlineOnly = false) {
     const adjustment = type === TransactionType.INCOME ? amount : -amount;
     
@@ -179,12 +253,13 @@ export const transactionService = {
         const acc = accounts.find(a => a.id === accountId);
         if (acc) {
             const newBalance = acc.balance + adjustment;
-            await supabase.from('accounts').update({ balance: newBalance }).eq('id', accountId);
+            await supabase.from('accounts').update({ balance: newBalance }).eq('id', accountId).eq('user_id', userId);
         }
       } catch (e) { console.error('Failed to update remote balance', e); }
     }
   },
 
+  // Fixed: Added missing transfer method
   async transfer(userId: string, fromId: string, toId: string, amount: number) {
      await this.add(userId, {
          date: new Date().toISOString().split('T')[0],
@@ -195,6 +270,7 @@ export const transactionService = {
          isFixed: false,
          accountId: fromId
      });
+     await this.updateAccountBalance(userId, fromId, amount, TransactionType.EXPENSE);
      
      await this.add(userId, {
          date: new Date().toISOString().split('T')[0],
@@ -205,12 +281,13 @@ export const transactionService = {
          isFixed: false,
          accountId: toId
      });
+     await this.updateAccountBalance(userId, toId, amount, TransactionType.INCOME);
   },
 
   // --- GOALS ---
   async getGoals(userId: string) {
     try {
-      const { data, error } = await supabase.from('goals').select('*');
+      const { data, error } = await supabase.from('goals').select('*').eq('user_id', userId);
       if (error) throw error;
       const mapped = (data || []).map(mapGoalFromDb);
       saveLocal(userId, 'goals', mapped);
@@ -218,6 +295,7 @@ export const transactionService = {
     } catch (error) { return getLocal<Goal>(userId, 'goals'); }
   },
 
+  // Fixed: Added missing addGoal method
   async addGoal(userId: string, goal: Omit<Goal, 'id'>) {
     try {
         const payload = {
@@ -244,9 +322,10 @@ export const transactionService = {
     }
   },
 
+  // Fixed: Added missing updateGoalAmount method
   async updateGoalAmount(userId: string, goalId: string, newAmount: number) {
       try {
-          await supabase.from('goals').update({ current_amount: newAmount }).eq('id', goalId);
+          await supabase.from('goals').update({ current_amount: newAmount }).eq('id', goalId).eq('user_id', userId);
           const goals = getLocal<Goal>(userId, 'goals');
           const updated = goals.map(g => g.id === goalId ? { ...g, currentAmount: newAmount } : g);
           saveLocal(userId, 'goals', updated);
@@ -257,6 +336,7 @@ export const transactionService = {
       }
   },
 
+  // Fixed: Added missing quickSave method
   async quickSave(userId: string, goalId: string, amount: number) {
       const accounts = await this.getAccounts(userId);
       const sourceAccount = accounts.find(a => a.type === 'BANK' && a.balance >= amount) || accounts[0];
@@ -277,6 +357,7 @@ export const transactionService = {
           isFixed: false,
           accountId: sourceAccount.id
       });
+      await this.updateAccountBalance(userId, sourceAccount.id, amount, TransactionType.EXPENSE);
 
       await this.updateGoalAmount(userId, goalId, targetGoal.currentAmount + amount);
       return true;
@@ -285,7 +366,7 @@ export const transactionService = {
   // --- SUBSCRIPTIONS ---
   async getSubscriptions(userId: string) {
       try {
-          const { data, error } = await supabase.from('subscriptions').select('*');
+          const { data, error } = await supabase.from('subscriptions').select('*').eq('user_id', userId);
           if (error) throw error;
           const mapped = (data || []).map(mapSubFromDb);
           saveLocal(userId, 'subscriptions', mapped);
@@ -293,6 +374,7 @@ export const transactionService = {
       } catch (error) { return getLocal<Subscription>(userId, 'subscriptions'); }
   },
 
+  // Fixed: Added missing addSubscription method
   async addSubscription(userId: string, sub: Omit<Subscription, 'id'>) {
       try {
           const payload = {
