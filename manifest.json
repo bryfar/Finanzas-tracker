@@ -8,14 +8,16 @@
   "theme_color": "#6366f1",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236366f1'/%3E%3Cpath d='M50 20 C25 20 10 45 10 70 C10 85 20 95 30 95 L70 95 C80 95 90 85 90 70 C90 45 75 20 50 20' fill='white'/%3E%3Ccircle cx='35' cy='55' r='4' fill='%234f46e5'/%3E%3Ccircle cx='65' cy='55' r='4' fill='%234f46e5'/%3E%3Cpath d='M45 68 Q50 72 55 68' stroke='%234f46e5' stroke-width='2' fill='none'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%236366f1'/%3E%3Cpath d='M96 40c-35 0-55 25-55 55s15 45 25 45h60c15 0 25-15 25-45s-20-55-55-55z' fill='white'/%3E%3Ccircle cx='75' cy='85' r='8' fill='%234f46e5'/%3E%3Ccircle cx='117' cy='85' r='8' fill='%234f46e5'/%3E%3Cpath d='M85 120 q11 11 22 0' stroke='%234f46e5' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236366f1'/%3E%3Cpath d='M50 20 C25 20 10 45 10 70 C10 85 20 95 30 95 L70 95 C80 95 90 85 90 70 C90 45 75 20 50 20' fill='white'/%3E%3Ccircle cx='35' cy='55' r='4' fill='%234f46e5'/%3E%3Ccircle cx='65' cy='55' r='4' fill='%234f46e5'/%3E%3Cpath d='M45 68 Q50 72 55 68' stroke='%234f46e5' stroke-width='2' fill='none'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%236366f1'/%3E%3Cpath d='M256 120c-80 0-140 60-140 140s40 120 60 120h160c40 0 60-40 60-120s-60-140-140-140z' fill='white'/%3E%3Ccircle cx='200' cy='230' r='20' fill='%234f46e5'/%3E%3Ccircle cx='312' cy='230' r='20' fill='%234f46e5'/%3E%3Cpath d='M220 320 q36 36 72 0' stroke='%234f46e5' stroke-width='12' fill='none' stroke-linecap='round'/%3E%3C/svg%3E",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
