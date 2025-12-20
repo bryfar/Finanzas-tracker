@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal } from "../types";
 
-// Use gemini-3-flash-preview for general tasks
+// Modelo recomendado para tareas de texto
 const modelId = "gemini-3-flash-preview";
 
 export const chatWithFinancialAdvisor = async (
@@ -13,7 +13,7 @@ export const chatWithFinancialAdvisor = async (
   personality: AIPersonality = 'MOTIVATOR'
 ): Promise<string> => {
   try {
-    // Initializing right before use as per guidelines
+    // Inicialización obligatoria dentro de la función para usar la API Key del entorno
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const dataContext = JSON.stringify(contextData.slice(0, 30));
@@ -27,17 +27,12 @@ export const chatWithFinancialAdvisor = async (
       
       PERSONALIDAD SELECCIONADA: ${toneInstruction}
       
-      ESTRATEGIA RECOMENDADA: Regla 50/20/30.
-      - 50% para Esenciales (Vivienda, Servicios, Transporte, Alimentación, Salud, Deudas).
-      - 20% para Estilo de Vida (Entretenimiento, Compras, Otros).
-      - 30% para Futuro / Categoría Millonaria (Fondo de emergencia, Plazo fijo, Inversión a largo plazo).
-      
       CONTEXTO DEL USUARIO:
-      - Racha de uso: ${streak} días.
-      - Transacciones recientes: ${dataContext}.
+      - Racha: ${streak} días.
+      - Datos recientes: ${dataContext}.
       
       OBJETIVO:
-      Proporciona consejos financieros personalizados basados en los datos. Enfócate especialmente en ayudar al usuario a cumplir la regla 50/20/30. Usa Markdown para dar formato.
+      Proporciona consejos financieros personalizados. Usa Markdown para dar formato.
     `;
 
     const chatHistory = history.map(h => ({
@@ -55,10 +50,10 @@ export const chatWithFinancialAdvisor = async (
       message: currentMessage
     });
 
-    return response.text || "Lo siento, no pude procesar esa consulta.";
+    return response.text || "No pude procesar la respuesta.";
   } catch (error) {
     console.error("Gemini Chat error:", error);
-    return "Tuve un pequeño problema técnico analizando tus finanzas. ¿Podrías intentar de nuevo?";
+    return "Lo siento, tuve un problema analizando tus datos. ¿Podemos intentarlo de nuevo?";
   }
 };
 
@@ -75,32 +70,20 @@ export const detectAnomalies = (transactions: Transaction[]): AIInsight[] => {
             insights.push({
                 id: t.id,
                 type: 'ANOMALY',
-                message: `Detecté un gasto inusual de S/.${t.amount} en ${t.category}. ¿Es correcto?`,
+                message: `Detecté un gasto inusual de S/.${t.amount} en ${t.category}.`,
                 date: t.date
             });
         });
-
-        const coffeeShops = expenses.filter(t => t.category === 'Alimentación' && t.amount < 20).length;
-        if (coffeeShops > 5) {
-             insights.push({
-                id: 'ant-1',
-                type: 'WARNING',
-                message: `Has realizado varios gastos pequeños en alimentación. ¡Cuidado con los gastos hormiga!`,
-                date: new Date().toISOString()
-            });
-        }
     }
     return insights;
 };
 
 export const generateEducationTips = (transactions: Transaction[]): EducationTip[] => {
-    const tips: EducationTip[] = [
-        { id: '1', title: 'Regla 50/20/30', content: 'Divide tus ingresos: 50% necesidades, 20% deseos, 30% categoría millonaria (emergencia, plazos fijos e inversión).', category: 'Estrategia', readTime: '2 min' },
-        { id: '2', title: 'Fondo de Emergencia', content: 'Tu prioridad en el 30% del futuro. Debe cubrir de 3 a 6 meses de tus gastos fijos.', category: 'Ahorro', readTime: '1 min' },
-        { id: '3', title: 'Inversión vs Ahorro', content: 'Ahorrar es guardar, invertir es poner a trabajar. Tu 30% debe buscar rentabilidad.', category: 'Inversión', readTime: '3 min' },
+    return [
+        { id: '1', title: 'Regla 50/20/30', content: 'Divide tus ingresos: 50% necesidades, 20% deseos, 30% ahorro.', category: 'Estrategia', readTime: '2 min' },
+        { id: '2', title: 'Fondo de Emergencia', content: 'Debe cubrir de 3 a 6 meses de tus gastos fijos.', category: 'Ahorro', readTime: '1 min' },
+        { id: '3', title: 'Interés Compuesto', content: 'El dinero que genera más dinero. Empieza cuanto antes.', category: 'Inversión', readTime: '3 min' },
     ];
-    
-    return tips;
 };
 
 export const generateDailySnaps = (goals: Goal[], streak: number): Snap[] => {
@@ -111,24 +94,9 @@ export const generateDailySnaps = (goals: Goal[], streak: number): Snap[] => {
         type: 'STREAK_SUMMARY',
         content: {
             title: `¡${streak} Días de Racha!`,
-            subtitle: 'Tu disciplina financiera está dando frutos. Sigue así.',
+            subtitle: 'Tu constancia es la base de tu éxito financiero.',
             mediaUrl: 'https://images.unsplash.com/photo-1550534791-2677533605ab?q=80&w=1000&auto=format&fit=crop'
         }
-    });
-
-    const activeGoals = goals.filter(g => g.currentAmount < g.targetAmount);
-    activeGoals.slice(0, 2).forEach(goal => {
-        snaps.push({
-            id: `promo-${goal.id}`,
-            type: 'GOAL_PROMO',
-            content: {
-                title: goal.name,
-                subtitle: `Estás al ${((goal.currentAmount/goal.targetAmount)*100).toFixed(0)}% de tu meta. ¡Un esfuerzo más!`,
-                mediaUrl: goal.mediaUrl || `https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop`,
-                goalId: goal.id,
-                actionLabel: 'Ahorro Rápido'
-            }
-        });
     });
 
     return snaps;

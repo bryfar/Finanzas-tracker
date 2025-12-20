@@ -42,27 +42,41 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    authService.getSession().then((s) => { 
-        setSession(s); 
-        if (!s) { setIsInitializing(false); setIsSyncing(false); }
-    });
+    // Inicialización segura de la sesión
+    const initAuth = async () => {
+      try {
+        const s = await authService.getSession();
+        setSession(s);
+      } catch (e) {
+        console.error("Session init error:", e);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initAuth();
+
     const { data } = authService.onAuthStateChange((_, s) => { 
         setSession(s); 
         if(!s) { 
             setTransactions([]); 
-            setIsInitializing(false); 
             setIsSyncing(false); 
         }
     });
-    return () => data.subscription.unsubscribe();
+    
+    return () => {
+      if (data?.subscription) data.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => { 
       if (session?.user?.id) {
           setIsSyncing(true);
           loadAllData(session.user.id);
-      } 
-  }, [session]);
+      } else if (!isInitializing) {
+          setIsSyncing(false);
+      }
+  }, [session, isInitializing]);
 
   const loadAllData = async (userId: string) => {
     try {
@@ -72,15 +86,19 @@ function App() {
           transactionService.getGoals(userId),
           transactionService.getSubscriptions(userId)
       ]);
-      setTransactions(txs); setAccounts(accs); setGoals(gls); setSubscriptions(subs);
-      const calcStreak = calculateStreak(txs);
+      setTransactions(txs || []); 
+      setAccounts(accs || []); 
+      setGoals(gls || []); 
+      setSubscriptions(subs || []);
+      
+      const calcStreak = calculateStreak(txs || []);
       setStreak(calcStreak);
-      setDailySnaps(generateDailySnaps(gls, calcStreak));
+      setDailySnaps(generateDailySnaps(gls || [], calcStreak));
     } catch (e) { 
-      addNotification('error', 'Error de sincronización'); 
+      console.error("Load all data error:", e);
+      addNotification('error', 'Error al sincronizar datos'); 
     } finally { 
         setIsSyncing(false); 
-        setIsInitializing(false);
     }
   };
 
@@ -135,14 +153,25 @@ function App() {
   };
 
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
-      await transactionService.add(session.user.id, newTx);
-      addNotification('success', 'Movimiento guardado');
-      loadAllData(session.user.id);
+      try {
+        await transactionService.add(session.user.id, newTx);
+        addNotification('success', 'Movimiento guardado');
+        loadAllData(session.user.id);
+      } catch (e) {
+        addNotification('error', 'Error al guardar');
+      }
   };
 
-  if (!session && !isInitializing) return <Auth />;
+  if (isInitializing) return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
+        <Mascot variant="idle" size={80} className="animate-pulse mb-4" />
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Cargando...</p>
+    </div>
+  );
+
+  if (!session) return <Auth />;
   
-  if (isSyncing || isInitializing) return (
+  if (isSyncing) return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
           <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">Finanzas AI</h2>
@@ -152,17 +181,6 @@ function App() {
 
   const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   const avatarSeed = session.user.user_metadata?.avatar_seed || session.user.email;
-
-  const getPageTitle = () => {
-      switch(activeView) {
-          case 'analysis': return 'Análisis';
-          case 'assets': return 'Patrimonio';
-          case 'goals': return 'Metas';
-          case 'education': return 'Educación';
-          case 'settings': return 'Ajustes';
-          default: return 'Inicio';
-      }
-  };
 
   return (
     <div className="min-h-[100dvh] bg-surface font-sans text-slate-800 flex overflow-hidden">
@@ -211,8 +229,10 @@ function App() {
             <div className="p-4 lg:p-8 max-w-[1400px] mx-auto pb-48 lg:pb-12">
                 <header className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-2xl font-heading font-black text-slate-900">{getPageTitle()}</h1>
-                        <p className="text-xs text-slate-500 font-medium">Hola de nuevo, {displayName.split(' ')[0]}</p>
+                        <h1 className="text-2xl font-heading font-black text-slate-900">
+                          {activeView === 'dashboard' ? 'Inicio' : activeView.charAt(0).toUpperCase() + activeView.slice(1)}
+                        </h1>
+                        <p className="text-xs text-slate-500 font-medium">Hola, {displayName.split(' ')[0]}</p>
                     </div>
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('settings')}>
                         <div className="text-right hidden sm:block">
@@ -220,7 +240,7 @@ function App() {
                             <p className="text-[10px] text-slate-400">S/. {summary.balance.toLocaleString()}</p>
                         </div>
                         <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-100 overflow-hidden group-hover:shadow-md transition-all">
-                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" />
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`} className="w-full h-full object-cover" alt="avatar" />
                         </div>
                     </div>
                 </header>
@@ -233,7 +253,7 @@ function App() {
                             <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shrink-0">
                                 <span className="text-lg">💡</span>
                             </div>
-                            <p>Vas camino a cerrar el mes con <span className="font-black text-indigo-900">S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>. ¡Sigue así!</p>
+                            <p>Vas camino a cerrar el mes con <span className="font-black text-indigo-900">S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>.</p>
                         </div>
 
                         <AccountsWidget accounts={accounts} onAddAccount={async (a: Omit<Account, 'id'>) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f: string, t: string, amt: number) => { await transactionService.transfer(session.user.id, f, t, amt); loadAllData(session.user.id); }} />
