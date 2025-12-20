@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, KeyRound, Loader2, Save, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, KeyRound, Loader2, Save, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -57,10 +57,6 @@ function App() {
   };
 
   useEffect(() => {
-    if (window.location.hash.includes('access_token') || window.location.search.includes('type=recovery')) {
-        setIsRecovery(true);
-    }
-
     const checkAuth = async () => {
         try {
             const s = await authService.getSession();
@@ -70,12 +66,10 @@ function App() {
                 setIsSyncing(false);
             }
         } catch (e) {
-            console.error("Auth check failed:", e);
             setIsInitializing(false);
             setIsSyncing(false);
         }
     };
-    
     checkAuth();
 
     const { data } = authService.onAuthStateChange((event, s) => { 
@@ -86,28 +80,10 @@ function App() {
             setSession(null);
         } else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
             setSession(s);
-        } else if (event === 'PASSWORD_RECOVERY') {
-            setIsRecovery(true);
         }
     });
     return () => data.subscription.unsubscribe();
   }, [session?.user?.id]);
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRecoveryLoading(true);
-    try {
-        await authService.updatePassword(newPassword);
-        addNotification('success', 'Contraseña actualizada correctamente');
-        setIsRecovery(false);
-        window.location.hash = ''; 
-        window.location.search = '';
-    } catch (err: any) {
-        addNotification('error', err.message || 'Error al actualizar contraseña');
-    } finally {
-        setRecoveryLoading(false);
-    }
-  };
 
   useEffect(() => { 
       if (session?.user?.id && !isRecovery) {
@@ -134,22 +110,11 @@ function App() {
       setStreak(calcStreak);
       setDailySnaps(generateDailySnaps(gls || [], calcStreak));
     } catch (e) { 
-        console.error("Sync error:", e);
-        addNotification('error', 'Error al conectar con la base de datos'); 
+        addNotification('error', 'Error al sincronizar datos'); 
     } finally { 
         setIsSyncing(false); 
         setIsInitializing(false);
     }
-  };
-
-  const addNotification = (type: 'success'|'error'|'info', message: string) => {
-      setNotifications(prev => [...prev, { id: Date.now().toString(), type, message }]);
-  };
-
-  const handleAddTransaction = async (newTx: any) => {
-      await transactionService.add(session.user.id, newTx);
-      addNotification('success', 'Movimiento guardado');
-      loadAllData(session.user.id);
   };
 
   const calculateStreak = (txs: Transaction[]) => {
@@ -191,66 +156,34 @@ function App() {
     });
   }, [transactions, accounts]);
 
-  const handleLogout = async () => {
-    try {
-        await authService.signOut();
-    } catch (e) {
-        console.error("Logout error", e);
-        resetAppState();
-        setSession(null);
-    }
+  const addNotification = (type: 'success'|'error'|'info', message: string) => {
+      setNotifications(prev => [...prev, { id: Date.now().toString(), type, message }]);
   };
 
-  if (isRecovery) return (
-    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-slate-100">
-            <div className="flex flex-col items-center text-center mb-8">
-                <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-4">
-                    <KeyRound size={32} />
-                </div>
-                <h1 className="text-2xl font-heading font-black text-slate-900">Nueva Contraseña</h1>
-                <p className="text-slate-500 font-medium">Establece tu nuevo acceso seguro.</p>
-            </div>
-            <form onSubmit={handleUpdatePassword} className="space-y-6">
-                <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Nueva Contraseña</label>
-                    <input type="password" required minLength={6} value={newPassword} onChange={e => setNewPassword(e.target.value)} className="input-base" placeholder="••••••••" />
-                </div>
-                <button type="submit" disabled={recoveryLoading} className="w-full btn-primary py-4 text-lg">
-                    {recoveryLoading ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2"><Save size={20}/> Guardar y Continuar</span>}
-                </button>
-            </form>
-        </div>
-    </div>
-  );
+  const handleLogout = async () => {
+    await authService.signOut();
+  };
 
   if (!session && !isInitializing) return <Auth />;
   
   if (isSyncing || isInitializing) return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-surface">
           <Mascot variant="thinking" size={120} className="animate-float mb-6" />
-          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2">Conectando...</h2>
-          <p className="text-slate-500 font-medium animate-pulse">Sincronizando tus datos privados</p>
+          <h2 className="text-2xl font-heading font-black text-slate-900 mb-2 text-center px-4">Preparando tu Espacio...</h2>
+          <p className="text-slate-500 font-medium animate-pulse">Cada usuario tiene su propio universo de datos</p>
       </div>
   );
 
   const displayName = session.user.user_metadata?.full_name || session.user.email.split('@')[0];
   const avatarSeed = session.user.user_metadata?.avatar_seed || session.user.email;
+  const isNewUser = accounts.length === 0;
 
   return (
     <div className="min-h-[100dvh] bg-surface font-sans text-slate-800 flex overflow-hidden">
         <NotificationToast notifications={notifications} removeNotification={(id) => setNotifications(p => p.filter(n => n.id !== id))} />
-        <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={handleAddTransaction} />
+        <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={async (tx) => { await transactionService.add(session.user.id, tx); loadAllData(session.user.id); addNotification('success', 'Movimiento registrado'); }} />
         
-        {showSnaps && (
-            <FinnySnaps 
-                snaps={dailySnaps} 
-                onClose={() => setShowSnaps(false)} 
-                userId={session.user.id} 
-                userMetadata={session.user.user_metadata}
-                onRefreshData={() => loadAllData(session.user.id)}
-            />
-        )}
+        {showSnaps && <FinnySnaps snaps={dailySnaps} onClose={() => setShowSnaps(false)} userId={session.user.id} userMetadata={session.user.user_metadata} onRefreshData={() => loadAllData(session.user.id)} />}
 
         <aside className="hidden lg:flex flex-col w-72 p-4 h-screen sticky top-0 z-40">
             <div className="bg-white rounded-[2rem] shadow-soft border border-slate-100/50 h-full flex flex-col p-6 overflow-hidden">
@@ -267,13 +200,8 @@ function App() {
                         { id: 'education', icon: BookOpen, label: 'Educación' },
                         { id: 'settings', icon: Settings, label: 'Ajustes' },
                     ].map(item => (
-                        <button 
-                            key={item.id}
-                            onClick={() => setActiveView(item.id as any)}
-                            className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-heading font-bold text-xs transition-all ${activeView === item.id ? 'bg-brand-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
-                        >
-                            <item.icon size={18} /> 
-                            <span>{item.label}</span>
+                        <button key={item.id} onClick={() => setActiveView(item.id as any)} className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-heading font-bold text-xs transition-all ${activeView === item.id ? 'bg-brand-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>
+                            <item.icon size={18} /> <span>{item.label}</span>
                         </button>
                     ))}
                  </nav>
@@ -309,36 +237,50 @@ function App() {
                  <div className="space-y-6">
                     {activeView === 'dashboard' && (
                         <div className="space-y-6">
-                            <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
-                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-3xl flex items-center gap-4 text-sm text-indigo-800 font-medium">
-                                <span className="text-xl">💡</span>
-                                <p>Proyectamos que cerrarás el mes con <span className="font-black">S/. {summary.projectedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>.</p>
-                            </div>
-                            <AccountsWidget accounts={accounts} onAddAccount={async (a) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f,t,a) => { await transactionService.transfer(session.user.id, f, t, a); loadAllData(session.user.id); }} />
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-                                <div className="xl:col-span-8 space-y-6">
-                                    <FinancialChart transactions={transactions} />
-                                    <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
-                                    <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); }} />
+                            {isNewUser ? (
+                                <div className="bg-white rounded-[2.5rem] p-12 text-center border-2 border-dashed border-slate-200 animate-fade-in">
+                                     <Mascot variant="celebrating" size={120} className="mx-auto mb-6" />
+                                     <h2 className="text-3xl font-heading font-black text-slate-900 mb-2">¡Bienvenido, {displayName.split(' ')[0]}!</h2>
+                                     <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">Este es tu espacio financiero personal. Está vacío porque acabas de empezar. ¿Qué tal si registramos tu primera cuenta?</p>
+                                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                         <button onClick={() => setShowTxModal(true)} className="btn-primary py-4 px-8 text-lg">
+                                             <Plus size={24} /> Primer Movimiento
+                                         </button>
+                                         <button onClick={() => setActiveView('settings')} className="bg-slate-100 text-slate-600 font-bold py-4 px-8 rounded-2xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
+                                             Configurar Perfil <ArrowRight size={20} />
+                                         </button>
+                                     </div>
                                 </div>
-                                <div className="xl:col-span-4 space-y-6 sticky top-24">
-                                    <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
-                                        const diff = val - summary.balance;
-                                        if (diff !== 0) {
-                                            await transactionService.add(session.user.id, {
-                                                amount: Math.abs(diff),
-                                                type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
-                                                description: 'Ajuste Manual',
-                                                date: new Date().toISOString().split('T')[0],
-                                                isFixed: false,
-                                                category: Category.OTHER
-                                            });
-                                            loadAllData(session.user.id);
-                                        }
-                                    }} />
-                                    <AIAdvisor transactions={transactions} streak={streak} />
-                                </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
+                                    <AccountsWidget accounts={accounts} onAddAccount={async (a) => { await transactionService.addAccount(session.user.id, a); loadAllData(session.user.id); }} onTransfer={async (f,t,a) => { await transactionService.transfer(session.user.id, f, t, a); loadAllData(session.user.id); }} />
+                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                                        <div className="xl:col-span-8 space-y-6">
+                                            <FinancialChart transactions={transactions} />
+                                            <TransactionList transactions={transactions} onDelete={async (id) => { await transactionService.delete(session.user.id, id); loadAllData(session.user.id); }} />
+                                            <SubscriptionTracker subscriptions={subscriptions} onAdd={async (s) => { await transactionService.addSubscription(session.user.id, s); loadAllData(session.user.id); }} />
+                                        </div>
+                                        <div className="xl:col-span-4 space-y-6 sticky top-24">
+                                            <SavingsGoal currentSavings={summary.balance} onAdjustBalance={async (val) => {
+                                                const diff = val - summary.balance;
+                                                if (diff !== 0) {
+                                                    await transactionService.add(session.user.id, {
+                                                        amount: Math.abs(diff),
+                                                        type: diff > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
+                                                        description: 'Ajuste Manual',
+                                                        date: new Date().toISOString().split('T')[0],
+                                                        isFixed: false,
+                                                        category: Category.OTHER
+                                                    });
+                                                    loadAllData(session.user.id);
+                                                }
+                                            }} />
+                                            <AIAdvisor transactions={transactions} streak={streak} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                     {activeView === 'analysis' && <AnalysisView transactions={transactions} subscriptions={subscriptions} userId={session.user.id} />}
@@ -358,12 +300,8 @@ function App() {
                 { id: 'goals', icon: Target },
                 { id: 'assets', icon: Wallet },
              ].map(item => (
-                 <button 
-                    key={item.id}
-                    onClick={() => item.main ? setShowTxModal(true) : setActiveView(item.id as any)}
-                    className={`relative w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${item.main ? 'bg-brand-600 text-white shadow-lg -mt-10 w-16 h-16 rounded-[2rem] active:scale-95 border-4 border-surface' : activeView === item.id ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}
-                 >
-                     <item.icon size={item.main ? 32 : 24} strokeWidth={item.main ? 3 : 2} />
+                 <button key={item.id} onClick={() => item.main ? setShowTxModal(true) : setActiveView(item.id as any)} className={`relative w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${item.main ? 'bg-brand-600 text-white shadow-lg -mt-10 w-16 h-16 rounded-[2rem] border-4 border-surface' : activeView === item.id ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}>
+                     <item.icon size={item.main ? 32 : 24} />
                  </button>
              ))}
         </nav>
