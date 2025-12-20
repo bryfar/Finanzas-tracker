@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
   <head>
@@ -9,19 +10,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Polyfill for process.env -->
     <script>
       window.process = {
         env: {
           NODE_ENV: 'development',
-          // Note: In a real Vercel deployment, this is replaced by the build system.
-          // For local/preview without build, this prevents crash if accessed.
           API_KEY: '' 
         }
       };
     </script>
 
-    <!-- Tailwind CDN for Browser Preview -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -39,78 +36,46 @@
                 200: '#c7d2fe',
                 300: '#a5b4fc',
                 400: '#818cf8',
-                500: '#6366f1', // Primary Indigo
+                500: '#6366f1',
                 600: '#4f46e5',
                 700: '#4338ca',
                 800: '#3730a3',
                 900: '#312e81',
               },
               action: {
-                DEFAULT: '#84cc16', // Lime 500
-                hover: '#65a30d',   // Lime 600
-                light: '#ecfccb',   // Lime 100
+                DEFAULT: '#84cc16',
+                hover: '#65a30d',
+                light: '#ecfccb',
               },
-              danger: '#f43f5e', // Rose 500
+              danger: '#f43f5e',
             },
             boxShadow: {
               'soft': '0 4px 20px -2px rgba(99, 102, 241, 0.05)',
-              'glow': '0 0 15px rgba(132, 204, 22, 0.3)',
             },
-            animation: {
-              'float': 'float 6s ease-in-out infinite',
-              'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              'slide-up': 'slideUp 0.4s ease-out',
-              'fade-in': 'fadeIn 0.5s ease-out',
-              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-              popIn: {
-                '0%': { opacity: '0', transform: 'scale(0.9)' },
-                '100%': { opacity: '1', transform: 'scale(1)' },
-              },
-              slideUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              shake: {
-                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
-                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
-                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
-                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
-              }
-            }
           }
         }
       }
     </script>
 
-  <script type="importmap">
-{
-  "imports": {
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://aistudiocdn.com/vite@^7.2.7",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
-    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
-    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.87.1"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+    {
+      "imports": {
+        "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
+        "vite": "https://aistudiocdn.com/vite@^7.2.7",
+        "react/": "https://aistudiocdn.com/react@^19.2.1/",
+        "react": "https://aistudiocdn.com/react@^19.2.1",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.32.0",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+        "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+        "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
+        "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+        "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.87.1"
+      }
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
