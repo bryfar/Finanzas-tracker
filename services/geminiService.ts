@@ -2,9 +2,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, AIInsight, EducationTip, AIPersonality, Snap, Goal } from "../types";
 
-// Initialize the Google GenAI SDK with the API key from environment variables
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-// Use gemini-3-flash-preview for basic text tasks like financial advice
+// We define a helper to get a fresh instance of the AI client using the current environment key
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 const modelId = "gemini-3-flash-preview";
 
 export const chatWithFinancialAdvisor = async (
@@ -15,8 +15,7 @@ export const chatWithFinancialAdvisor = async (
   personality: AIPersonality = 'MOTIVATOR'
 ): Promise<string> => {
   try {
-    if (!process.env.API_KEY) return "Error de configuración: Falta API Key.";
-
+    const ai = getAI();
     const dataContext = JSON.stringify(contextData.slice(0, 30));
     
     let toneInstruction = "Profesional pero motivador.";
@@ -24,16 +23,16 @@ export const chatWithFinancialAdvisor = async (
     if (personality === 'SARCASTIC') toneInstruction = "Con humor ácido, sarcástico pero dando buenos consejos financieros.";
 
     const systemInstruction = `
-      Eres FinanzasAI, un Asesor Financiero.
+      Eres FinanzasAI, un Asesor Financiero experto.
       
       PERSONALIDAD SELECCIONADA: ${toneInstruction}
       
-      CONTEXTO:
-      - Racha: ${streak} días.
-      - Datos recientes: ${dataContext}.
+      CONTEXTO DEL USUARIO:
+      - Racha de uso: ${streak} días.
+      - Transacciones recientes: ${dataContext}.
       
       OBJETIVO:
-      Responde a la consulta. Usa Markdown.
+      Proporciona consejos financieros personalizados basados en los datos. Usa Markdown para dar formato.
     `;
 
     const chatHistory = history.map(h => ({
@@ -41,23 +40,21 @@ export const chatWithFinancialAdvisor = async (
         parts: [{ text: h.text }]
     }));
 
-    // Create a chat session with system instruction
-    const chatWithHistory = ai.chats.create({
+    const chat = ai.chats.create({
         model: modelId,
         config: { systemInstruction },
         history: chatHistory
     });
 
-    // Send the message and get the response
-    const response = await chatWithHistory.sendMessage({
+    const response = await chat.sendMessage({
       message: currentMessage
     });
 
-    // Extract text output using the .text property
-    return response.text || "No pude procesar tu respuesta.";
+    // Directly access .text property
+    return response.text || "Lo siento, no pude procesar esa consulta.";
   } catch (error) {
     console.error("Chat error:", error);
-    return "Mi cerebro financiero está en mantenimiento. Intenta de nuevo.";
+    return "Tuve un pequeño problema técnico analizando tus finanzas. ¿Podrías intentar de nuevo?";
   }
 };
 
@@ -67,13 +64,14 @@ export const detectAnomalies = (transactions: Transaction[]): AIInsight[] => {
     
     if (expenses.length > 5) {
         const avg = expenses.reduce((s, t) => s + t.amount, 0) / expenses.length;
-        const highExpenses = expenses.filter(t => t.amount > avg * 2 && t.date > new Date(Date.now() - 7 * 86400000).toISOString());
+        const lastWeek = new Date(Date.now() - 7 * 86400000).toISOString();
+        const highExpenses = expenses.filter(t => t.amount > avg * 2 && t.date > lastWeek);
         
         highExpenses.forEach(t => {
             insights.push({
                 id: t.id,
                 type: 'ANOMALY',
-                message: `Detecté un gasto inusual de S/.${t.amount} en ${t.category}. ¿Todo bien?`,
+                message: `Detecté un gasto inusual de S/.${t.amount} en ${t.category}. ¿Es correcto?`,
                 date: t.date
             });
         });
@@ -83,7 +81,7 @@ export const detectAnomalies = (transactions: Transaction[]): AIInsight[] => {
              insights.push({
                 id: 'ant-1',
                 type: 'WARNING',
-                message: `Has hecho ${coffeeShops} gastos pequeños en comida. Los "gastos hormiga" suman.`,
+                message: `Has realizado varios gastos pequeños en alimentación. ¡Cuidado con los gastos hormiga!`,
                 date: new Date().toISOString()
             });
         }
@@ -93,63 +91,40 @@ export const detectAnomalies = (transactions: Transaction[]): AIInsight[] => {
 
 export const generateEducationTips = (transactions: Transaction[]): EducationTip[] => {
     const tips: EducationTip[] = [
-        { id: '1', title: 'Regla 50/30/20', content: 'Divide tus ingresos: 50% necesidades, 30% deseos, 20% ahorros.', category: 'Presupuesto', readTime: '2 min' },
-        { id: '2', title: 'Fondo de Emergencia', content: 'Deberías tener de 3 a 6 meses de gastos fijos ahorrados.', category: 'Ahorro', readTime: '1 min' },
-        { id: '3', title: 'Interés Compuesto', content: 'Es el interés sobre el interés. Tu mejor amigo a largo plazo.', category: 'Inversión', readTime: '3 min' },
+        { id: '1', title: 'Regla 50/30/20', content: 'Divide tus ingresos: 50% necesidades, 30% deseos, 20% ahorros e inversión.', category: 'Presupuesto', readTime: '2 min' },
+        { id: '2', title: 'Fondo de Emergencia', content: 'Lo ideal es tener de 3 a 6 meses de tus gastos fijos cubiertos para imprevistos.', category: 'Ahorro', readTime: '1 min' },
+        { id: '3', title: 'El Interés Compuesto', content: 'Es la fuerza más poderosa del universo financiero. Empieza a invertir hoy mismo.', category: 'Inversión', readTime: '3 min' },
     ];
     
-    const transportSpend = transactions.filter(t => t.category === 'Transporte').length;
-    if (transportSpend > 3) {
-        tips.unshift({
-            id: 'car-1', title: 'Ahorra en Gasolina', content: 'Mantén tus llantas infladas y evita acelerones bruscos para ahorrar hasta 15%.', category: 'Transporte', readTime: '1 min'
-        });
-    }
-
     return tips;
 };
 
-// [NUEVO 🔥] Generador de contenido para Finny Snaps
 export const generateDailySnaps = (goals: Goal[], streak: number): Snap[] => {
     const snaps: Snap[] = [];
 
-    // 1. Streak Summary Snap
     snaps.push({
         id: 'streak-intro',
         type: 'STREAK_SUMMARY',
         content: {
-            title: `¡${streak} Días en Racha!`,
-            subtitle: 'Mantén el fuego encendido. Hoy es un buen día para ahorrar.',
+            title: `¡${streak} Días de Racha!`,
+            subtitle: 'Tu disciplina financiera está dando frutos. Sigue así.',
             mediaUrl: 'https://images.unsplash.com/photo-1550534791-2677533605ab?q=80&w=1000&auto=format&fit=crop'
         }
     });
 
-    // 2. Goal Promos (Quick Save Opportunities)
     const activeGoals = goals.filter(g => g.currentAmount < g.targetAmount);
-    
-    // Sort random or by priority (simulated)
-    activeGoals.slice(0, 3).forEach(goal => {
+    activeGoals.slice(0, 2).forEach(goal => {
         snaps.push({
             id: `promo-${goal.id}`,
             type: 'GOAL_PROMO',
             content: {
                 title: goal.name,
-                subtitle: `Te faltan S/. ${(goal.targetAmount - goal.currentAmount).toLocaleString()} para completarlo.`,
-                mediaUrl: goal.mediaUrl || `https://source.unsplash.com/random/800x1600/?${goal.name.split(' ')[0]},travel,money`,
+                subtitle: `Estás al ${((goal.currentAmount/goal.targetAmount)*100).toFixed(0)}% de tu meta. ¡Un esfuerzo más!`,
+                mediaUrl: goal.mediaUrl || `https://source.unsplash.com/random/800x1600/?savings,money`,
                 goalId: goal.id,
-                actionLabel: 'Doble Tap para Ahorrar'
+                actionLabel: 'Ahorro Rápido'
             }
         });
-    });
-
-    // 3. Education/Tip Snap
-    snaps.push({
-        id: 'tip-daily',
-        type: 'TIP',
-        content: {
-            title: 'Sabías que...',
-            subtitle: 'Si ahorras S/. 5 al día, al final del año tendrás S/. 1,825 para tus vacaciones.',
-            mediaUrl: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?q=80&w=1000&auto=format&fit=crop'
-        }
     });
 
     return snaps;
