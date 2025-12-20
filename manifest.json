@@ -8,13 +8,13 @@
   "theme_color": "#6366f1",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%236366f1'/%3E%3Cpath d='M96 40c-35 0-55 25-55 55s15 45 25 45h60c15 0 25-15 25-45s-20-55-55-55z' fill='white'/%3E%3Ccircle cx='75' cy='85' r='8' fill='%234f46e5'/%3E%3Ccircle cx='117' cy='85' r='8' fill='%234f46e5'/%3E%3Cpath d='M85 120 q11 11 22 0' stroke='%234f46e5' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48Y2lyY2xlIGN4PSI5NiIgY3k9Ijk2IiByPSI5NiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik05NiA0MGMtMzUgMC01NSAyNS01NSA1NXMxNSA0NSAyNSA0NWg2MGMxNSAwIDI1LTE1IDI1LTQ1cy0yMC01NS01NS01NXoiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iNzUiIGN5PSI4NSIgcj0iOCIgZmlsbD0iIzRmNDZlNSIvPjxjaXJjbGUgY3g9IjExNyIgY3k9Ijg1IiByPSI4IiBmaWxsPSIjNGY0NmU1Ii8+PHBhdGggZD0iTTg1IDEyMCBxMTEgMTEgMjIgMCIgc3Ryb2tlPSIjNGY0NmU1IiBzdHJva2Utd2lkdGg9IjUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ccircle cx='256' cy='256' r='256' fill='%236366f1'/%3E%3Cpath d='M256 120c-80 0-140 60-140 140s40 120 60 120h160c40 0 60-40 60-120s-60-140-140-140z' fill='white'/%3E%3Ccircle cx='200' cy='230' r='20' fill='%234f46e5'/%3E%3Ccircle cx='312' cy='230' r='20' fill='%234f46e5'/%3E%3Cpath d='M220 320 q36 36 72 0' stroke='%234f46e5' stroke-width='12' fill='none' stroke-linecap='round'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjI1NiIgZmlsbD0iIzYzNjZmMSIvPjxwYXRoIGQ9Ik0yNTYgMTIwYy04MCAwLTE0MCA2MC0xNDAgMTQwczQwIDEyMCA2MCAxMjBoMTYwYzQwIDAgNjAtNDAgNjAtMTIwcy02MC0xNDAtMTQwLTE0MHoiIGZpbGw9IndoaXRlIi8+PGNpcmNsZSBjeD0iMjAwIiBjeT0iMjMwIiByPSIyMCIgZmlsbD0iIzRmNDZlNSIvPjxjaXJjbGUgY3g9IjMxMiIgY3k9IjIzMCIgcj0iMjAiIGZpbGw9IjRmNDZlNSIvPjxwYXRoIGQ9Ik0yMjAgMzIwIHEzNiAzNiA3MiAwIiBzdHJva2U9Iis0ZjQ2ZTUiIHN0cm9rZS13aWR0aD0iMTIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
