@@ -37,7 +37,7 @@ export interface Investment {
   name: string;
   type: 'EMERGENCY_FUND' | 'FIXED_TERM' | 'STOCKS' | 'CRYPTO' | 'SAVINGS';
   amount: number;
-  interestRate: number; // Tasa Anual
+  interestRate: number; 
   institution: string;
   startDate?: string;
 }
@@ -75,6 +75,18 @@ export interface Transaction {
   accountId?: string;
 }
 
+export interface RecurringTransaction {
+  id: string;
+  name: string;
+  amount: number;
+  type: TransactionType;
+  category: Category;
+  dayOfMonth: number;
+  isAuto: boolean; // Si es true, se inserta solo. Si es false, pide confirmación.
+  accountId: string;
+  lastProcessedMonth?: string; // Formato "YYYY-MM" para evitar duplicados
+}
+
 export interface FinancialSummary {
   totalIncome: number;
   totalExpense: number;
@@ -105,7 +117,6 @@ export interface UserMetadata {
   quick_save_amount?: number;
 }
 
-// Fixed: Added missing EducationTip interface for education view and AI service
 export interface EducationTip {
   id: string;
   title: string;
@@ -114,7 +125,6 @@ export interface EducationTip {
   readTime: string; 
 }
 
-// Fixed: Added missing AIInsight interface for anomaly detection
 export interface AIInsight {
   id: string;
   type: 'ANOMALY' | 'TIP' | 'WARNING';
@@ -122,7 +132,6 @@ export interface AIInsight {
   date: string;
 }
 
-// Fixed: Added missing ChatMessage interface for the AI Advisor chat UI
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';

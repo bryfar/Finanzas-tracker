@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, Sparkles } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Target, Settings, Plus, Flame, Wallet, BookOpen, Search, Bell, Sparkles, CalendarClock } from 'lucide-react';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import FinancialChart from './components/FinancialChart';
@@ -18,7 +18,9 @@ import NotificationToast, { Notification } from './components/NotificationToast'
 import Mascot from './components/Mascot';
 import StoriesBar from './components/StoriesBar'; 
 import FinnySnaps from './components/FinnySnaps'; 
-import { Transaction, TransactionType, FinancialSummary, Account, Goal, Subscription, Category, Snap } from './types';
+import UpcomingBills from './components/UpcomingBills';
+import RecurringForm from './components/RecurringForm';
+import { Transaction, TransactionType, FinancialSummary, Account, Goal, Subscription, Category, Snap, RecurringTransaction } from './types';
 import { transactionService } from './services/transactionService';
 import { authService } from './services/authService';
 import { generateDailySnaps } from './services/geminiService';
@@ -27,6 +29,7 @@ function App() {
   const [session, setSession] = useState<any>(null);
   const [activeView, setActiveView] = useState<'dashboard' | 'analysis' | 'assets' | 'goals' | 'education' | 'settings'>('dashboard');
   const [showTxModal, setShowTxModal] = useState(false);
+  const [showRecModal, setShowRecModal] = useState(false);
   const [showSnaps, setShowSnaps] = useState(false); 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
@@ -34,6 +37,7 @@ function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [streak, setStreak] = useState(0);
   const [summary, setSummary] = useState<FinancialSummary>({ totalIncome: 0, totalExpense: 0, balance: 0, savingsRate: 0, fixedExpenses: 0, variableExpenses: 0, projectedBalance: 0 });
   const [dailySnaps, setDailySnaps] = useState<Snap[]>([]);
@@ -66,26 +70,78 @@ function App() {
 
   const loadAllData = async (userId: string) => {
     try {
-      const [txs, accs, gls, subs] = await Promise.all([
+      const [txs, accs, gls, subs, recs] = await Promise.all([
           transactionService.getAll(userId),
           transactionService.getAccounts(userId),
           transactionService.getGoals(userId),
-          transactionService.getSubscriptions(userId)
+          transactionService.getSubscriptions(userId),
+          transactionService.getRecurring(userId)
       ]);
       setTransactions(txs || []); setAccounts(accs || []); setGoals(gls || []); setSubscriptions(subs || []);
+      setRecurring(recs || []);
+      
       const calcStreak = calculateStreak(txs || []);
       setStreak(calcStreak);
       setDailySnaps(generateDailySnaps(gls || [], calcStreak));
+
+      // Procesar automáticos
+      processRecurring(userId, recs || []);
       
-      if (isSyncing) {
-        addNotification('info', 'Tus datos están sincronizados');
-      }
     } catch (e) { 
         addNotification('error', 'Error al sincronizar datos'); 
     } finally { 
         setIsSyncing(false); 
         setIsInitializing(false);
     }
+  };
+
+  const processRecurring = async (userId: string, recs: RecurringTransaction[]) => {
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentMonth = today.toISOString().slice(0, 7);
+      let count = 0;
+
+      for (const rec of recs) {
+          if (rec.isAuto && rec.dayOfMonth <= currentDay && rec.lastProcessedMonth !== currentMonth) {
+              await transactionService.add(userId, {
+                  amount: rec.amount,
+                  type: rec.type,
+                  category: rec.category,
+                  description: `${rec.name} (Auto)`,
+                  date: today.toISOString().split('T')[0],
+                  isFixed: true,
+                  accountId: rec.accountId
+              });
+              await transactionService.markRecurringProcessed(userId, rec.id, currentMonth);
+              count++;
+          }
+      }
+
+      if (count > 0) {
+          addNotification('success', `Finny registró ${count} cobros/pagos automáticos.`);
+          const freshTxs = await transactionService.getAll(userId);
+          const freshRecs = await transactionService.getRecurring(userId);
+          setTransactions(freshTxs);
+          setRecurring(freshRecs);
+      }
+  };
+
+  const handleManualProcess = async (rec: RecurringTransaction) => {
+      const today = new Date();
+      const currentMonth = today.toISOString().slice(0, 7);
+      
+      await transactionService.add(session.user.id, {
+          amount: rec.amount,
+          type: rec.type,
+          category: rec.category,
+          description: rec.name,
+          date: today.toISOString().split('T')[0],
+          isFixed: true,
+          accountId: rec.accountId
+      });
+      await transactionService.markRecurringProcessed(session.user.id, rec.id, currentMonth);
+      addNotification('success', `¡Listo! ${rec.name} registrado.`);
+      loadAllData(session.user.id);
   };
 
   const calculateStreak = (txs: Transaction[]) => {
@@ -161,9 +217,11 @@ function App() {
         <TransactionForm isOpen={showTxModal} onClose={() => setShowTxModal(false)} userId={session.user.id} onAddTransaction={async (tx) => { 
             await transactionService.add(session.user.id, tx); 
             loadAllData(session.user.id); 
-            addNotification('success', '¡Movimiento guardado con éxito!'); 
+            addNotification('success', '¡Movimiento guardado!'); 
         }} />
         
+        {showRecModal && <RecurringForm userId={session.user.id} onClose={() => setShowRecModal(false)} onAdded={() => loadAllData(session.user.id)} />}
+
         {showSnaps && <FinnySnaps snaps={dailySnaps} onClose={() => setShowSnaps(false)} userId={session.user.id} userMetadata={session.user.user_metadata} onRefreshData={() => {
             loadAllData(session.user.id);
             addNotification('success', '¡Ahorro rápido completado!');
@@ -190,6 +248,9 @@ function App() {
                         </button>
                     ))}
                  </nav>
+                 <button onClick={() => setShowRecModal(true)} className="mt-4 w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl font-heading font-black text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all">
+                    <CalendarClock size={18} /> <span>Programar Fijo</span>
+                 </button>
             </div>
         </aside>
 
@@ -203,18 +264,23 @@ function App() {
                         <h1 className="text-2xl font-heading font-black text-slate-900">{getPageTitle()}</h1>
                         <p className="text-xs text-slate-500 font-medium">Hola, {displayName.split(' ')[0]}</p>
                     </div>
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('settings')}>
-                        <div className="text-right">
-                            <p className="font-bold text-xs group-hover:text-brand-600 transition-colors">{displayName}</p>
-                            <p className="text-[10px] text-slate-400">S/. {summary.balance.toLocaleString()}</p>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-100 overflow-hidden group-hover:shadow-md transition-all">
-                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}&backgroundColor=f8fafc`} className="w-full h-full object-cover" />
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setShowRecModal(true)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-brand-500 hover:shadow-md transition-all">
+                            <CalendarClock size={20} />
+                        </button>
+                        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView('settings')}>
+                            <div className="text-right">
+                                <p className="font-bold text-xs group-hover:text-brand-600 transition-colors">{displayName}</p>
+                                <p className="text-[10px] text-slate-400">S/. {summary.balance.toLocaleString()}</p>
+                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-100 overflow-hidden group-hover:shadow-md transition-all">
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}&backgroundColor=f8fafc`} className="w-full h-full object-cover" />
+                            </div>
                         </div>
                     </div>
                  </header>
 
-                 {/* Mobile Header - Native Layout */}
+                 {/* Mobile Header */}
                  <header className="lg:hidden flex justify-between items-center mb-6 pt-2">
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 shrink-0 rounded-[1rem] bg-white border border-slate-100 flex items-center justify-center overflow-hidden active:scale-95 transition-transform" onClick={() => setActiveView('settings')}>
@@ -225,9 +291,14 @@ function App() {
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider mt-1 truncate">{displayName.split(' ')[0]}</p>
                         </div>
                     </div>
-                    <button onClick={() => addNotification('info', '¡Finny está vigilando tus finanzas!')} className="w-10 h-10 shrink-0 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
-                         <Bell size={20} />
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={() => setShowRecModal(true)} className="w-10 h-10 shrink-0 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
+                             <CalendarClock size={20} />
+                        </button>
+                        <button onClick={() => addNotification('info', '¡Finny está vigilando!')} className="w-10 h-10 shrink-0 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
+                             <Bell size={20} />
+                        </button>
+                    </div>
                  </header>
 
                  <div className="space-y-6">
@@ -235,6 +306,9 @@ function App() {
                         <div className="space-y-6">
                             <StoriesBar streak={streak} onOpenSnaps={() => setShowSnaps(true)} onAddQuick={() => setShowTxModal(true)} />
                             
+                            {/* Alertas de Programados */}
+                            <UpcomingBills recurring={recurring} onProcess={handleManualProcess} />
+
                             <div className="lg:hidden">
                                 <div className="bg-brand-600 rounded-[2.5rem] p-6 text-white shadow-2xl shadow-brand-500/20 relative overflow-hidden active:scale-[0.98] transition-transform">
                                     <div className="relative z-10">
@@ -296,7 +370,7 @@ function App() {
                     {activeView === 'goals' && <GoalsSection goals={goals} onAddGoal={async (g) => { 
                         await transactionService.addGoal(session.user.id, g); 
                         loadAllData(session.user.id); 
-                        addNotification('success', '¡Nueva meta creada! A por ello.');
+                        addNotification('success', '¡Nueva meta creada!');
                     }} onUpdateGoal={async (id, a) => { 
                         await transactionService.updateGoalAmount(session.user.id, id, a); 
                         loadAllData(session.user.id); 
@@ -310,7 +384,7 @@ function App() {
              </div>
         </main>
 
-        {/* Mobile Navigation Bar - Fixed with Safe Area Bottom */}
+        {/* Mobile Navigation Bar */}
         <nav className="lg:hidden fixed bottom-6 left-4 right-4 bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-2 z-40 flex justify-between items-center border border-white/50 mb-safe">
              {[
                 { id: 'dashboard', icon: LayoutDashboard },
